@@ -59,30 +59,36 @@ def parse_requirements(md_file):
 
         # Split by columns
         columns = line.split(' | ')
-        if len(columns) > 6:
+        if len(columns) != 5:
             print_failed(line, line_no, section='columns')
             continue
-        status, package, version, usage, folder, notes = columns
+        folder, package, version, usage, notes = columns
+
+        # Folder
+        if not folder.strip():
+            print_failed(line, line_no, folder, 'folder')
+            continue
+        folder = folder.strip(' *').split(' ')
+
+        # Usage
         if usage:
             usage = [pkg.replace('**', '') for pkg in usage.split(', ')]
 
+        # Package
         match = PACKAGE_PATTERN.match(package)
         if not match:
             print_failed(line, line_no, package, 'package')
             continue
         package = match.groups()[0]
 
+        # Version
         match = VERSION_PATTERN.match(version)
         if not match:
             print_failed(line, line_no, version, 'version')
             continue
         git, version, url = match.groups()
 
-        if not folder.strip():
-            print_failed(line, line_no, folder, 'folder')
-            continue
-        folder = folder.strip(' *').split(' ')
-
+        # Notes
         match = NOTES_PATTERN.match(notes)
         if not match:
             print_failed(line, line_no, notes, 'notes')
@@ -92,13 +98,12 @@ def parse_requirements(md_file):
             notes = None
 
         results.append({
-            'status': status,
+            'folder': folder,
             'package': package,
             'git': bool(git),
             'version': version,
             'url': url,
             'usage': usage,
-            'folder': folder,
             'module': module,
             'markers': markers,
             'notes': notes,
