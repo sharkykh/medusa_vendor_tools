@@ -1,8 +1,10 @@
+# coding: utf-8
 """
-Usage - in the same folder with requirements.txt, run:
+Generate `requirements.txt` from `ext/readme.md`.
+
+Usage - in the same folder with `requirements.txt`, run:
   python requirements_gen_from_md.py
 """
-# coding: utf-8
 
 from __future__ import print_function
 from __future__ import unicode_literals
