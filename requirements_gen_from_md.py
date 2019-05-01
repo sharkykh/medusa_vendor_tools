@@ -137,7 +137,7 @@ def main(infile, outfile, all_packages=False, json_output=False):
 
     if json_output:
         import json
-        data = '[\n  ' + ',\n  '.join(json.dumps(req) for req in requirements) + '\n]\n'
+        data = '[\n  ' + ',\n  '.join(json.dumps(req, sort_keys=True) for req in requirements) + '\n]\n'
     else:
         data = ''.join(make_requirement(req) + '\n' for req in requirements)
 
