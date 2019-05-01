@@ -8,6 +8,9 @@ import io
 import re
 import sys
 
+# List only packages used by Medusa, or all the packages?
+ALL_PACKAGES = False
+
 # Strip code tags to make line pattern simpler, and remove line breaks
 STRIP_PATTERN = re.compile(r'</?code>|`|\n$', re.IGNORECASE)
 PACKAGE_PATTERN = re.compile(r'(?:<b>|\*\*)?([\w.-]+)(?:</b>|\*\*)?.*', re.IGNORECASE)
@@ -118,7 +121,8 @@ def make_requirement(req):
 
 def main(file='ext/readme.md', output='requirements.txt'):
     requirements = parse_requirements(file)
-    # requirements = [r for r in requirements if 'medusa' in r['usage'] or r['git']]
+    if not ALL_PACKAGES:
+        requirements = [r for r in requirements if any('medusa' in u for u in r['usage']) or r['git']]
     requirements.sort(key=lambda r: r['package'].lower())
 
     data = ''.join(make_requirement(req) + '\n' for req in requirements)
