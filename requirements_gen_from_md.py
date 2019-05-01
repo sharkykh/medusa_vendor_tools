@@ -118,7 +118,7 @@ def make_requirement(req):
 
 def main(file='ext/readme.md', output='requirements.txt'):
     requirements = parse_requirements(file)
-    # requirements = [r for r in requirements if 'medusa' in r['usage']]
+    # requirements = [r for r in requirements if 'medusa' in r['usage'] or r['git']]
     requirements.sort(key=lambda r: r['package'].lower())
 
     data = ''.join(make_requirement(req) + '\n' for req in requirements)
