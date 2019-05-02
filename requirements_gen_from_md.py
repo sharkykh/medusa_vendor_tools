@@ -20,7 +20,7 @@ DEFAULT_OUTFILE = 'requirements.txt'
 STRIP_PATTERN = re.compile(r'</?code>|`|\n$', re.IGNORECASE)
 PACKAGE_PATTERN = re.compile(r'(?:<b>|\*\*)?([\w.-]+)(?:</b>|\*\*)?.*', re.IGNORECASE)
 VERSION_PATTERN = re.compile(r'(?:\w+/)?\[(?:(?P<git>commit|[a-f0-9]+)|(?P<version>[\d.]+))\]\((?P<url>[\w.:/-]+)\)', re.IGNORECASE)
-NOTES_PATTERN = re.compile(r'(?:(?:Module|File): (?P<module>[\w.]+))?(?:<br>)?(?:Markers: (?P<markers>.+))?(?P<notes>.*)', re.IGNORECASE)
+NOTES_PATTERN = re.compile(r'(?:(?:Module|File): (?P<module>[\w.]+))?(?:<br>)?(?P<notes>.*)', re.IGNORECASE)
 
 GIT_REPLACE_PATTERN = re.compile(r'/(?:tree|commits?)/', re.IGNORECASE)
 
@@ -98,7 +98,7 @@ def parse_requirements(md_file):
         if not match:
             print_failed(line, line_no, notes, 'notes')
             continue
-        module, markers, notes = match.groups()
+        module, notes = match.groups()
         if notes == '-':
             notes = None
 
@@ -110,7 +110,6 @@ def parse_requirements(md_file):
             'url': url,
             'usage': usage,
             'module': module,
-            'markers': markers,
             'notes': notes,
         })
 
@@ -119,8 +118,12 @@ def parse_requirements(md_file):
 
 def make_requirement(req):
     markers = ''
-    if req['markers']:
-        markers = ' ; ' + req['markers']
+    # Exclusive-OR: Either '<dir>2' or '<dir>3', but not both
+    ext = ('ext2' in req['folder']) != ('ext3' in req['folder'])
+    lib = ('lib2' in req['folder']) != ('lib3' in req['folder'])
+    if len(req['folder']) == 1 and (ext or lib):
+        major_v = req['folder'][0][-1]
+        markers = " ; python_version == '%s.*'" % major_v
 
     if req['git']:
         if 'github.com' in req['url']:
