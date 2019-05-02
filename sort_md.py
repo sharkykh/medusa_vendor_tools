@@ -7,7 +7,6 @@ Usage - in the same folder with `start.py`, run:
 """
 
 import io
-import os
 import re
 
 # Taken from `requirements_gen_from_md.py`
@@ -15,9 +14,8 @@ import re
 STRIP_PATTERN = re.compile(r'</?code>|`|\n$', re.IGNORECASE)
 PACKAGE_PATTERN = re.compile(r'(?:<b>|\*\*)?([\w.-]+)(?:</b>|\*\*)?.*', re.IGNORECASE)
 
-here = os.path.dirname(__file__)
-extfile = os.path.join(here, 'ext/readme.md')
-libfile = os.path.join(here, 'lib/readme.md')
+extfile = 'ext/readme.md'
+libfile = 'lib/readme.md'
 
 
 def sort_md(file):
