@@ -1,9 +1,13 @@
+#!/usr/bin/env python3
+#!/usr/bin/env python
 # coding: utf-8
 """
 Generate `requirements.txt` from `ext/readme.md`.
 
 Usage - in the same folder with `requirements.txt`, run:
   python requirements_gen_from_md.py
+    or
+  ./requirements_gen_from_md.py
 """
 
 from __future__ import print_function

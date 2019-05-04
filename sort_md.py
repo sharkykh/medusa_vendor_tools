@@ -1,9 +1,13 @@
+#!/usr/bin/env python3
+#!/usr/bin/env python
 # coding: utf-8
 """
 Sort `ext/readme.md` and `lib/readme.md` by package name.
 
 Usage - in the same folder with `start.py`, run:
   python sort_md.py
+    or
+  ./sort_md.py
 """
 
 import io
