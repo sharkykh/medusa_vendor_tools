@@ -9,6 +9,8 @@ from __future__ import unicode_literals
 import io
 import re
 
+from collections import OrderedDict
+
 # Strip code tags to make line pattern simpler, and remove line breaks
 STRIP_PATTERN = re.compile(r'</?code>|`|\n$', re.IGNORECASE)
 PACKAGE_PATTERN = re.compile(r'(?:<b>|\*\*)?([\w.-]+)(?:</b>|\*\*)?(.*)', re.IGNORECASE)
@@ -107,15 +109,14 @@ def parse_requirements(md_file):
             module = package + first_item
         modules = [module or package] + extra_modules
 
-        result = {
-            'folder': folder,
-            'package': package,
-            'git': bool(git),
-            'version': version,
-            'url': url,
-            'usage': usage,
-            'modules': modules,
-            'notes': notes,
-        }
+        result = OrderedDict()
+        result['folder'] = folder
+        result['package'] = package
+        result['version'] = version
+        result['modules'] = modules
+        result['git'] = bool(git)
+        result['url'] = url
+        result['usage'] = usage
+        result['notes'] = notes
 
         yield result, None
