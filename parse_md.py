@@ -11,7 +11,7 @@ import re
 
 # Strip code tags to make line pattern simpler, and remove line breaks
 STRIP_PATTERN = re.compile(r'</?code>|`|\n$', re.IGNORECASE)
-PACKAGE_PATTERN = re.compile(r'(?:<b>|\*\*)?([\w.-]+)(?:</b>|\*\*)?.*', re.IGNORECASE)
+PACKAGE_PATTERN = re.compile(r'(?:<b>|\*\*)?([\w.-]+)(?:</b>|\*\*)?(.*)', re.IGNORECASE)
 VERSION_PATTERN = re.compile(r'(?:\w+/)?\[(?:(?P<git>commit|[a-f0-9]+)|(?P<version>[\d.]+))\]\((?P<url>[\w.:/-]+)\)', re.IGNORECASE)
 NOTES_PATTERN = re.compile(r'(?:(?:Module|File): (?P<module>[\w.]+))?(?:<br>)?(?P<notes>.*)', re.IGNORECASE)
 
@@ -78,12 +78,12 @@ def parse_requirements(md_file):
         if usage:
             usage = [pkg.replace('**', '') for pkg in usage.split(', ')]
 
-        # Package
+        # Package / Extra Modules
         match = PACKAGE_PATTERN.match(package)
         if not match:
             yield None, LineParseError(line, line_no, package, 'package')
             continue
-        package = match.groups()[0]
+        package, extra_modules = match.groups()
 
         # Version
         match = VERSION_PATTERN.match(version)
@@ -101,6 +101,12 @@ def parse_requirements(md_file):
         if notes == '-':
             notes = None
 
+        extra_modules = extra_modules.split('<br>')
+        first_item = extra_modules.pop(0)  # Could be an empty string
+        if not module and first_item:  # `.py`
+            module = package + first_item
+        modules = [module or package] + extra_modules
+
         result = {
             'folder': folder,
             'package': package,
@@ -108,7 +114,7 @@ def parse_requirements(md_file):
             'version': version,
             'url': url,
             'usage': usage,
-            'module': module,
+            'modules': modules,
             'notes': notes,
         }
 
