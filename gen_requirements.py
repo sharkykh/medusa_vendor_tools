@@ -14,16 +14,18 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import io
+import re
 import sys
 
 from parse_md import (
-    GIT_REPLACE_PATTERN,
     LineParseError,
     parse_requirements,
 )
 
 DEFAULT_INFILE = 'ext/readme.md'
 DEFAULT_OUTFILE = 'requirements.txt'
+
+GIT_REPLACE_PATTERN = re.compile(r'/(?:tree|commits?)/', re.IGNORECASE)
 
 
 def make_requirement(req):
