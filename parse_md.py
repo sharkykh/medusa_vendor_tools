@@ -3,6 +3,7 @@
 Helper functions to parse vendor readme.md files
 """
 
+from __future__ import absolute_import
 from __future__ import print_function
 from __future__ import unicode_literals
 
