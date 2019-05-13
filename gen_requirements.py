@@ -42,7 +42,7 @@ def make_requirement(req):
             git_url = git_url.replace('https://github.com/', 'https://codeload.github.com/')
         else:
             git_url = 'git+' + GIT_REPLACE_PATTERN.sub('.git@', req['url'])
-        return git_url + '#egg=' + (req['module'] or req['package']) + markers
+        return git_url + '#egg=' + req['package'] + markers
     else:
         return req['package'] + '==' + req['version'] + markers
 
