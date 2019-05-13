@@ -13,10 +13,10 @@ Usage - in the same folder with `start.py`, run:
 import io
 import re
 
-# Taken from `gen_requirements.py`
-# Strip code tags to make line pattern simpler, and remove line breaks
-STRIP_PATTERN = re.compile(r'</?code>|`|\n$', re.IGNORECASE)
-PACKAGE_PATTERN = re.compile(r'(?:<b>|\*\*)?([\w.-]+)(?:</b>|\*\*)?.*', re.IGNORECASE)
+from parse_md import (
+    PACKAGE_PATTERN,
+    STRIP_PATTERN,
+)
 
 extfile = 'ext/readme.md'
 libfile = 'lib/readme.md'
