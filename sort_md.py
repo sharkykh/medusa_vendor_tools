@@ -13,7 +13,7 @@ Usage - in the same folder with `start.py`, run:
 import io
 import re
 
-# Taken from `requirements_gen_from_md.py`
+# Taken from `gen_requirements.py`
 # Strip code tags to make line pattern simpler, and remove line breaks
 STRIP_PATTERN = re.compile(r'</?code>|`|\n$', re.IGNORECASE)
 PACKAGE_PATTERN = re.compile(r'(?:<b>|\*\*)?([\w.-]+)(?:</b>|\*\*)?.*', re.IGNORECASE)

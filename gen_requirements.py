@@ -5,9 +5,9 @@
 Generate `requirements.txt` from `ext/readme.md`.
 
 Usage - in the same folder with `requirements.txt`, run:
-  python requirements_gen_from_md.py
+  python gen_requirements.py
     or
-  ./requirements_gen_from_md.py
+  ./gen_requirements.py
 """
 
 from __future__ import print_function
