@@ -15,6 +15,7 @@ from collections import OrderedDict
 STRIP_PATTERN = re.compile(r'</?code>|`|\n$', re.IGNORECASE)
 PACKAGE_PATTERN = re.compile(r'(?:<b>|\*\*)?([\w.-]+)(?:</b>|\*\*)?(.*)', re.IGNORECASE)
 VERSION_PATTERN = re.compile(r'(?:\w+/)?\[(?:(?P<git>commit|[a-f0-9]+)|(?P<version>[\d.]+))\]\((?P<url>[\w.:/-]+)\)', re.IGNORECASE)
+URL_COMMIT_PATTERN = re.compile(r'/([a-f0-9]{40})/?', re.IGNORECASE)
 NOTES_PATTERN = re.compile(r'(?:(?:Module|File): (?P<module>[\w.]+))?(?:<br>)?(?P<notes>.*)', re.IGNORECASE)
 
 
@@ -91,6 +92,13 @@ def parse_requirements(md_file):
             yield None, LineParseError(line, line_no, version, 'version')
             continue
         git, version, url = match.groups()
+
+        if git and not version:
+            match = URL_COMMIT_PATTERN.search(url)
+            if not match:
+                yield None, LineParseError(line, line_no, url, 'url')
+                continue
+            version = match.group(1)
 
         # Notes
         match = NOTES_PATTERN.match(notes)
