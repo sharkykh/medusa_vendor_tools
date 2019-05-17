@@ -17,7 +17,6 @@ STRIP_PATTERN = re.compile(r'</?code>|`|\n$', re.IGNORECASE)
 PACKAGE_PATTERN = re.compile(r'(?:<b>|\*\*)?([\w.-]+)(?:</b>|\*\*)?(.*)', re.IGNORECASE)
 VERSION_PATTERN = re.compile(r'(?:\w+/)?\[(?:(?P<git>commit|[a-f0-9]+)|(?P<version>[\d.]+))\]\((?P<url>[\w.:/-]+)\)', re.IGNORECASE)
 URL_COMMIT_PATTERN = re.compile(r'/([a-f0-9]{40})/?', re.IGNORECASE)
-NOTES_PATTERN = re.compile(r'(?:(?:Module|File): (?P<module>[\w.]+))?(?:<br>)?(?P<notes>.*)', re.IGNORECASE)
 
 
 class LineParseError(Exception):
@@ -102,13 +101,16 @@ def parse_requirements(md_file):
             version = match.group(1)
 
         # Notes
-        match = NOTES_PATTERN.match(notes)
-        if not match:
-            yield None, LineParseError(line, line_no, notes, 'notes')
-            continue
-        module, notes = match.groups()
-        if notes == '-':
-            notes = None
+        split_notes = notes.split('<br>')
+        module = ''
+        notes = []
+        for note in split_notes:
+            if note.startswith(('Module: ', 'File: ')):
+                module = note.split(': ', 1)[1]
+                continue
+            if note == '-':
+                continue
+            notes.append(note)
 
         extra_modules = extra_modules.split('<br>')
         first_item = extra_modules.pop(0)  # Could be an empty string
