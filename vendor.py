@@ -10,6 +10,7 @@ from collections import OrderedDict
 from contextlib import suppress
 from difflib import ndiff
 from pathlib import Path
+from textwrap import dedent
 
 from pkg_resources import WorkingSet
 from pkg_resources._vendor.packaging.requirements import InvalidRequirement, Requirement
@@ -24,6 +25,12 @@ from make_md import (
     make_packages_pattern,
     make_list_item,
 )
+
+# https://github.com/:owner/:repo@eea9ac18e38c930230cf81b5dca4a9af9fb10d4e
+# https://github.com/:owner/:repo.git@eea9ac18e38c930230cf81b5dca4a9af9fb10d4e
+# https://codeload.github.com/:owner/:repo/tar.gz/eea9ac18e38c930230cf81b5dca4a9af9fb10d4e
+# Not perfect, but close enough? Can't handle branches ATM anyway
+GITHUB_URL_PATTERN = re.compile(r'github.com/(?P<slug>.+?/.+?)(?:\.git@|/tar\.gz/)?(?P<commit>[a-f0-9]{40})/?', re.IGNORECASE)
 
 DEFAULT_LISTFILE = 'ext/readme.md'
 
@@ -304,20 +311,45 @@ def vendor(vendor_dir, package, package_name, py2=False):
             meta_line = meta_line.replace('Requires-Dist: ', '')
             dependencies.append(Requirement(meta_line))
 
+    # Update version and url
+    if 'github.com' in package:
+        is_git = True
+        match = GITHUB_URL_PATTERN.search(package)
+        url = 'https://github.com/{slug}/tree/{commit}'
+        if not match:
+            print(dedent("""
+            -----------------------------------------------------
+                                    ERROR
+            -----------------------------------------------------
+            Failed to parse the URL from repo and commit hash
+            Be sure to include the commit hash in the install URL
+            -----------------------------------------------------
+            """))
+            # Put some random data so the script doesn't fail to parse the line
+            from hashlib import sha1
+            version = sha1(b'commit').hexdigest()
+            url = url.format(slug='unknown/unknown', commit=version)
+        else:
+            groups = match.groupdict()
+            url = url.format(**groups)
+            version = groups['commit']
+    else:
+        is_git = False
+        url = 'https://pypi.org/project/%s/%s/' % (pkg_real_name, version)
+
     result = OrderedDict()
     result['folder'] = [vendor_dir.name]
     result['package'] = pkg_real_name
     result['version'] = version
     result['modules'] = top_level
-    result['git'] = False
-    result['url'] = 'https://pypi.org/project/%s/%s/' % (pkg_real_name, version)
+    result['git'] = is_git
+    result['url'] = url
     result['usage'] = []
     result['notes'] = notes
 
     result['dependencies'] = dependencies
 
-    remove_all(vendor_dir.glob('*.dist-info'))
-    remove_all(vendor_dir.glob('*.egg-info'))
+    drop_dir(dist_dir)
 
     # Drop the bin directory (contains easy_install, distro, chardetect etc.)
     # Might not appear on all OSes, so ignoring errors
