@@ -12,7 +12,7 @@ from difflib import ndiff
 from pathlib import Path
 
 from pkg_resources import WorkingSet
-from pkg_resources._vendor.packaging.requirements import Requirement
+from pkg_resources._vendor.packaging.requirements import InvalidRequirement, Requirement
 from pkg_resources._vendor.packaging.version import parse as parse_version
 
 from parse_md import (
@@ -44,10 +44,26 @@ def main(listfile, package, py2, py3):
     listpath = Path(listfile)
     root = listpath.parent.parent.absolute()
 
+    # Parse package name / version specifier from argument
+    try:
+        parsed_package = Requirement(package)
+        package_name = parsed_package.name
+        specifier = str(parsed_package.specifier)
+    except InvalidRequirement:
+        egg_value = re.search(r'#egg=(.+)(?:&|$)', package)
+        if egg_value:
+            parsed_package = Requirement(egg_value.group(1))
+            package_name = parsed_package.name
+            specifier = str(parsed_package.specifier)
+        else:
+            raise ValueError('Unable to parse {}'.format(package))
+
+    print('Starting vendor script for: {}'.format(package_name + specifier))
+
     # Remove old folder(s)/file(s) first using info from `ext/readme.md`
     requirements = [req for req, _ in parse_requirements(listfile)]
     req_idx = next(
-        (i for (i, req) in enumerate(requirements) if package.lower() == req['package'].lower()),
+        (i for (i, req) in enumerate(requirements) if package_name.lower() == req['package'].lower()),
         None
     )
     if req_idx is not None:
@@ -65,24 +81,24 @@ def main(listfile, package, py2, py3):
             pass
 
         if not py2 and not py3:
-            print('Package %s found in list, using that' % package)
+            print('Package %s found in list, using that' % package_name)
             install_folders = req['folder']
         else:
-            print('Installing %s as a new package due to CLI switches' % package)
+            print('Installing %s as a new package due to CLI switches' % package_name)
             target = req['folder'][0].strip('23')
             install_folders = make_list_of_folders(target, py2, py3)
     else:
         if py2 or py3:
-            print('Installing %s as a new package due to CLI switches' % package)
+            print('Installing %s as a new package due to CLI switches' % package_name)
         else:
-            print('Package %s not found in list, assuming new package' % package)
+            print('Package %s not found in list, assuming new package' % package_name)
 
         target = listpath.parent.name  # ext | lib
         install_folders = make_list_of_folders(target, py2, py3)
 
     installed = None
     for f in install_folders:
-        installed = vendor(root / f, package, py2=f.endswith('2'))
+        installed = vendor(root / f, package, package_name, py2=f.endswith('2'))
 
         print('Installed: %s==%s to %s' % (
             installed['package'], installed['version'], f
@@ -172,8 +188,8 @@ def remove_all(paths):
             path.unlink()
 
 
-def vendor(vendor_dir, package, py2=False):
-    print('Installing vendored library `%s` to `%s`' % (package, vendor_dir.name))
+def vendor(vendor_dir, package, package_name, py2=False):
+    print('Installing vendored library `%s` to `%s`' % (package_name, vendor_dir.name))
 
     # We use `--no-deps` because we want to ensure that all of our dependencies are added to the list.
     # This includes all dependencies recursively up the chain.
@@ -193,7 +209,7 @@ def vendor(vendor_dir, package, py2=False):
     # installed_pkg = wset.by_key[pkg_real_name.lower()]
     ###########################
 
-    dist_dir = next(vendor_dir.glob(package + '*.*-info'))
+    dist_dir = next(vendor_dir.glob(package_name + '*.*-info'))
 
     match = re.match(r'(.+)-([0-9]+(?:\.[0-9]+)*)(?:-py\d\.\d)*.(dist|egg)-info', dist_dir.name, re.IGNORECASE)
     if match:
@@ -233,7 +249,7 @@ def vendor(vendor_dir, package, py2=False):
         if name in top_level or name + '.py' in top_level:
             continue
         if (vendor_dir / (name + '.py')).is_file():
-            if name == package:
+            if name == package_name:
                 has_lower_name = 'File'
                 top_level.insert(0, name + '.py')
             elif name == pkg_real_name:
@@ -242,7 +258,7 @@ def vendor(vendor_dir, package, py2=False):
             else:
                 top_level.append(name + '.py')
         elif (vendor_dir / name).is_dir():
-            if name == package:
+            if name == package_name:
                 has_lower_name = 'Module'
                 top_level.insert(0, name)
             elif name == pkg_real_name:
