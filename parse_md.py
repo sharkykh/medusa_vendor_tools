@@ -78,6 +78,8 @@ def parse_requirements(md_file):
         # Usage
         if usage:
             usage = [pkg.replace('**', '') for pkg in usage.split(', ')]
+        else:
+            usage = []
 
         # Package / Extra Modules
         match = PACKAGE_PATTERN.match(package)
