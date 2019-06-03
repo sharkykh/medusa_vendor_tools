@@ -12,7 +12,7 @@ from difflib import ndiff
 from pathlib import Path
 
 from pkg_resources import WorkingSet
-from pkg_resources._vendor.packaging.specifiers import SpecifierSet
+from pkg_resources._vendor.packaging.requirements import Requirement
 from pkg_resources._vendor.packaging.version import parse as parse_version
 
 from parse_md import (
@@ -104,7 +104,7 @@ def main(listfile, package, py2, py3):
     print('+-------------------+')
 
     dependencies = installed.pop('dependencies', [])
-    dep_names = [d['package'].lower() for d in dependencies]
+    dep_names = [d.name.lower() for d in dependencies]
     req_names = [r['package'].lower() for r in requirements]
 
     installed_pkg_lower = installed['package'].lower()
@@ -118,16 +118,21 @@ def main(listfile, package, py2, py3):
             print('Removed `{0}` usage from dependency `{1}`'.format(installed['package'], r['package']))
 
     for d in dependencies:
-        d_pkg_lower = d['package'].lower()
-        spec = SpecifierSet(d['version'])
-        if installed_pkg_lower not in req_names:
-            print('Need to install new dependency `{0}` @ {1}'.format(d['package'], str(spec) or 'any version'))
+        d_pkg_lower = d.name.lower()
+        if d_pkg_lower not in req_names:
+            text = 'May need to install new dependency `{0}` @ {1}'.format(d.name, str(d.specifier) or 'any version')
+            if d.marker:
+                text += ', but only for {}'.format(str(d.marker))
+            print(text)
             continue
         idx = req_names.index(d_pkg_lower)
         dep_req = requirements[idx]
         ver = parse_version(dep_req['version'])
-        if ver not in spec:
-            print('Need to update {0} to {1} (spec: {2})'.format(dep_req['package'], ver, spec))
+        if ver not in d.specifier:
+            if dep_req['git']:
+                print('May need to update {0} (git dependency) to match specifier: {1}'.format(dep_req['package'], d.specifier))
+            else:
+                print('Need to update {0} from {1} to match specifier: {2}'.format(dep_req['package'], ver, d.specifier))
         if installed_pkg_lower not in map(str.lower, dep_req['usage']):
             # print('Need to add {0} to the "usage" column of {1}'.format(installed['package'], dep_req['package']))
             dep_req['usage'].append(installed['package'])
@@ -285,17 +290,12 @@ def vendor(vendor_dir, package, py2=False):
             break
         if meta_line.startswith('Provides-Extra:'):
             continue
-        if meta_line.startswith('Requires-Dist:') and 'extra == ' not in meta_line:
-            parts = meta_line.split(' ')
-            try:
-                v = parts[2].strip('()')
-            except IndexError:
-                v = ''
-
-            dependencies.append({
-                'package': parts[1],
-                'version': v,
-            })
+        # Requires-Dist: chardet (<3.1.0,>=3.0.2)
+        # Requires-Dist: win-inet-pton; (sys_platform == "win32" and python_version == "2.7") and extra == 'socks'
+        # Requires-Dist: funcsigs; python_version == "2.7"
+        if meta_line.startswith('Requires-Dist: ') and 'extra == ' not in meta_line:
+            meta_line = meta_line.replace('Requires-Dist: ', '')
+            dependencies.append(Requirement(meta_line))
 
     result = OrderedDict()
     result['folder'] = [vendor_dir.name]
