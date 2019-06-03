@@ -1,4 +1,4 @@
-# medusa_vendor_tools
+# Medusa Vendor Tools [MVT]
 
 Tools for dealing with the vendored libraries and requirement lists in [**pymedusa/Medusa**](https://github.com/pymedusa/Medusa).
 
@@ -26,9 +26,9 @@ Tools for dealing with the vendored libraries and requirement lists in [**pymedu
 The scripts require that you run them with your in Medusa's root folder, meaning:
 ```shell
 cd /path/to/Medusa
-python <script>.py [<arguments>]
+python /path/to/medusa_vendor_tools/<script>.py [<arguments>]
 ```
-You can use `-h` you see some help on the script.
+You can use `-h` to see some help on some of the scripts.
 
 ## Contents
 
