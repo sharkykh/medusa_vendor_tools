@@ -203,21 +203,12 @@ def vendor(vendor_dir, package, package_name, py2=False):
     subprocess.call(args)
     print('----- [ pip | py%d ] -----' % (2 if py2 else 3))
 
-    ###########################
-    # wset = WorkingSet([str(vendor_dir)])
-    # [(k, p.project_name, p.parsed_version) for k, p in wset.by_key.items()]
-    # installed_pkg = wset.by_key[pkg_real_name.lower()]
-    ###########################
+    working_set = WorkingSet([str(vendor_dir)])  # Must be a list to work
+    installed_pkg = next(iter(working_set.by_key.values()))
 
-    dist_dir = next(vendor_dir.glob(package_name + '*.*-info'))
-
-    match = re.match(r'(.+)-([0-9]+(?:\.[0-9]+)*)(?:-py\d\.\d)*.(dist|egg)-info', dist_dir.name, re.IGNORECASE)
-    if match:
-        pkg_real_name = match.group(1)
-        version = match.group(2)
-        dir_type = match.group(3)
-    else:
-        raise ValueError('Failed to parse dist dir: %s' % dist_dir.name)
+    dist_dir = Path(installed_pkg.egg_info)
+    pkg_real_name = installed_pkg.project_name
+    version = installed_pkg.version
 
     using = None
     checklist = [
