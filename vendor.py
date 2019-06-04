@@ -222,10 +222,44 @@ def vendor(vendor_dir, package, parsed_package, py2=False):
     working_set = WorkingSet([str(vendor_dir)])  # Must be a list to work
     installed_pkg = working_set.by_key[parsed_package.name.lower()]
 
-    dist_dir = Path(installed_pkg.egg_info)
-    pkg_real_name = installed_pkg.project_name
-    version = installed_pkg.version
+    # Modules, Notes
+    modules, notes = get_modules_and_notes(vendor_dir, installed_pkg, parsed_package)
 
+    # Dependencies
+    dependencies = get_dependencies(installed_pkg, parsed_package)
+
+    # Update version and url
+    version, url, is_git = get_version_and_url(package, installed_pkg)
+
+    result = OrderedDict()
+    result['folder'] = [vendor_dir.name]
+    result['package'] = installed_pkg.project_name
+    result['version'] = version
+    result['modules'] = modules
+    result['git'] = is_git
+    result['url'] = url
+    result['usage'] = []
+    result['notes'] = notes
+
+    result['dependencies'] = dependencies
+
+    # Remove the package info folder
+    drop_dir(Path(installed_pkg.egg_info))
+
+    # Drop the bin directory (contains easy_install, distro, chardetect etc.)
+    # Might not appear on all OSes, so ignoring errors
+    drop_dir(vendor_dir / 'bin', ignore_errors=True)
+
+    remove_all(vendor_dir.glob('**/*.pyd'))
+
+    # Drop interpreter and OS specific msgpack libs.
+    # Pip will rely on the python-only fallback instead.
+    remove_all(vendor_dir.glob('msgpack/*.so'))
+
+    return result
+
+
+def get_modules_and_notes(vendor_dir, installed_pkg, parsed_package):
     using = None
     checklist = [
         'top_level.txt',
@@ -313,10 +347,32 @@ def vendor(vendor_dir, package, parsed_package, py2=False):
     if has_lower_name:
         notes.append('%s: %s' % (has_lower_name, top_level[0]))
 
-    # Dependencies
-    dependencies = get_dependencies(installed_pkg, parsed_package)
+    return top_level, notes
 
-    # Update version and url
+def get_dependencies(installed_pkg, parsed_package):
+    raw_metadata = installed_pkg.get_metadata(installed_pkg.PKG_INFO)
+    metadata = email.parser.Parser().parsestr(raw_metadata)
+
+    deps = []
+    for meta_line in metadata.get_all('Requires-Dist'):
+        # Requires-Dist: chardet (<3.1.0,>=3.0.2)
+        # Requires-Dist: win-inet-pton; (sys_platform == "win32" and python_version == "2.7") and extra == 'socks'
+        # Requires-Dist: funcsigs; python_version == "2.7"
+        req = Requirement(meta_line)
+
+        def eval_extra(extra, python_version):
+            return req.marker.evaluate({'extra': extra, 'python_version': python_version})
+
+        extras = parsed_package.extras
+        eval_py27 = req.marker and any(eval_extra(ex, '2.7') for ex in extras)
+        eval_py35 = req.marker and any(eval_extra(ex, '3.5') for ex in extras)
+        if not req.marker or eval_py27 or eval_py35:
+            deps.append(req)
+
+    return deps
+
+
+def get_version_and_url(package, installed_pkg):
     if 'github.com' in package:
         is_git = True
         match = GITHUB_URL_PATTERN.search(package)
@@ -340,56 +396,10 @@ def vendor(vendor_dir, package, parsed_package, py2=False):
             version = groups['commit']
     else:
         is_git = False
-        url = 'https://pypi.org/project/%s/%s/' % (pkg_real_name, version)
+        version = installed_pkg.version
+        url = 'https://pypi.org/project/%s/%s/' % (installed_pkg.project_name, version)
 
-    result = OrderedDict()
-    result['folder'] = [vendor_dir.name]
-    result['package'] = pkg_real_name
-    result['version'] = version
-    result['modules'] = top_level
-    result['git'] = is_git
-    result['url'] = url
-    result['usage'] = []
-    result['notes'] = notes
-
-    result['dependencies'] = dependencies
-
-    drop_dir(dist_dir)
-
-    # Drop the bin directory (contains easy_install, distro, chardetect etc.)
-    # Might not appear on all OSes, so ignoring errors
-    drop_dir(vendor_dir / 'bin', ignore_errors=True)
-
-    remove_all(vendor_dir.glob('**/*.pyd'))
-
-    # Drop interpreter and OS specific msgpack libs.
-    # Pip will rely on the python-only fallback instead.
-    remove_all(vendor_dir.glob('msgpack/*.so'))
-
-    return result
-
-
-def get_dependencies(installed_pkg, parsed_package):
-    raw_metadata = installed_pkg.get_metadata(installed_pkg.PKG_INFO)
-    metadata = email.parser.Parser().parsestr(raw_metadata)
-
-    deps = []
-    for meta_line in metadata.get_all('Requires-Dist'):
-        # Requires-Dist: chardet (<3.1.0,>=3.0.2)
-        # Requires-Dist: win-inet-pton; (sys_platform == "win32" and python_version == "2.7") and extra == 'socks'
-        # Requires-Dist: funcsigs; python_version == "2.7"
-        req = Requirement(meta_line)
-
-        def eval_extra(extra, python_version):
-            return req.marker.evaluate({'extra': extra, 'python_version': python_version})
-
-        extras = parsed_package.extras
-        eval_py27 = req.marker and any(eval_extra(ex, '2.7') for ex in extras)
-        eval_py35 = req.marker and any(eval_extra(ex, '3.5') for ex in extras)
-        if not req.marker or eval_py27 or eval_py35:
-            deps.append(req)
-
-    return deps
+    return version, url, is_git
 
 
 if __name__ == '__main__':
