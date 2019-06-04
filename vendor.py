@@ -171,22 +171,42 @@ def main(listfile, package, py2, py3):
     print('Updating list')
 
     if req_idx is not None:
-        pkg_ptrn = make_packages_pattern(requirements)
-        before = make_list_item(requirements[req_idx], pkg_ptrn) + '\n'
-        after = make_list_item(installed, pkg_ptrn) + '\n'
-        print('Before / After:')
-        print(''.join(
-            ndiff([before], [after])
-        ), end='')
-
         requirements[req_idx] = installed
     else:
         requirements.append(installed)
 
     md_data = make_md(requirements)
 
-    with listpath.open('w', encoding='utf-8', newline='\n') as fh:
+    with listpath.open('r+', encoding='utf-8', newline='\n') as fh:
+        md_before = fh.readlines()
+        fh.seek(0)
         fh.write(''.join(md_data))
+        fh.truncate()
+
+    index = 0
+    end_index = max(len(md_before), len(md_data))
+    diff_left = []
+    diff_right = []
+    while index < end_index:
+        try:
+            left = md_before.pop(0)
+        except IndexError:
+            left = ''
+        try:
+            right = md_data.pop(0)
+        except IndexError:
+            right = ''
+
+        if left != right:
+            diff_left.append(left)
+            diff_right.append(right)
+
+        index += 1
+
+    diff = ''.join(ndiff(diff_left, diff_right))
+    if diff.strip():
+        print('\nBefore / After:\n===============\n')
+        print(diff, end='')
 
 
 def drop_dir(path, **kwargs):
