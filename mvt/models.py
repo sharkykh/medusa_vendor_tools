@@ -55,3 +55,7 @@ class VendoredLibrary:
             markers = " ; python_version == '%s.*'" % major_v
 
         return markers
+
+    @property
+    def used_by_medusa(self):
+        return any('medusa' in u for u in self.usage)
