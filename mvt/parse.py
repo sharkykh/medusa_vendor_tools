@@ -3,14 +3,9 @@
 Helper functions to parse vendor readme.md files
 """
 
-from __future__ import absolute_import
-from __future__ import print_function
-from __future__ import unicode_literals
-
-import io
 import re
-
 from collections import OrderedDict
+from pathlib import Path
 
 # Strip code tags to make line pattern simpler, and remove line breaks
 STRIP_PATTERN = re.compile(r'</?code>|`|\n$', re.IGNORECASE)
@@ -21,13 +16,13 @@ URL_COMMIT_PATTERN = re.compile(r'/([a-f0-9]{40})/?', re.IGNORECASE)
 
 class LineParseError(Exception):
     """Raised when unable to parse requirement line."""
-    def __init__(self, line, line_no, part=None, section=None):
+    def __init__(self, line: str, line_no: int, part: str = None, section: str = None):
         self.line = line
         self.line_no = line_no
         self.part = part
         self.section = section
 
-    def __str__(self):
+    def __str__(self) -> str:
         failed_header = 'Failed to parse {0} on line {1}:'.format(self.section or 'line', self.line_no)
         line_header = 'Full line ({0}):'.format(self.line_no)
 
@@ -51,8 +46,10 @@ class LineParseError(Exception):
         return result
 
 
-def parse_requirements(md_file):
-    with io.open(md_file, 'r', encoding='utf-8') as file:
+def parse_requirements(md_file: str):
+    # Yields (result, None) or (None, LineParseError)
+    file_path = Path(md_file)
+    with file_path.open('r', encoding='utf-8') as file:
         lines = file.readlines()
 
     for line_no, line in enumerate(lines[3:], 3):
