@@ -24,7 +24,7 @@ def wrapTag(s, t):
 
 def make_packages_pattern(requirements):
     packages = map(lambda r: re.escape(r['package']), requirements)
-    return re.compile('(\b)?(' + '|'.join(packages) + ')(\b)?')
+    return re.compile('(?<!`)(\b)?(' + '|'.join(packages) + ')(\b)?(?!`)')
 
 
 def make_list_item(req, packages_pattern):
