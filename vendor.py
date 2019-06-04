@@ -177,36 +177,10 @@ def main(listfile, package, py2, py3):
 
     md_data = make_md(requirements)
 
-    with listpath.open('r+', encoding='utf-8', newline='\n') as fh:
-        md_before = fh.readlines()
-        fh.seek(0)
+    with listpath.open('w', encoding='utf-8', newline='\n') as fh:
         fh.write(''.join(md_data))
-        fh.truncate()
 
-    index = 0
-    end_index = max(len(md_before), len(md_data))
-    diff_left = []
-    diff_right = []
-    while index < end_index:
-        try:
-            left = md_before.pop(0)
-        except IndexError:
-            left = ''
-        try:
-            right = md_data.pop(0)
-        except IndexError:
-            right = ''
-
-        if left != right:
-            diff_left.append(left)
-            diff_right.append(right)
-
-        index += 1
-
-    diff = ''.join(ndiff(diff_left, diff_right))
-    if diff.strip():
-        print('\nBefore / After:\n===============\n')
-        print(diff, end='')
+    print('Done!')
 
 
 def drop_dir(path, **kwargs):
