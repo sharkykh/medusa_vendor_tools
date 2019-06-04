@@ -76,12 +76,13 @@ def make_list_item(req, packages_pattern):
 
     # Notes
     notes = []
-    if req['modules'][0].endswith('.py'):
-        if req['modules'][0][:-3] != req['package']:
-            notes.append('File: `%s`' % req['modules'][0])
-    else:
-        if req['modules'][0] != req['package']:
-            notes.append('Module: `%s`' % req['modules'][0])
+    if not mod_in_pkg:
+        if req['modules'][0].endswith('.py'):
+            if req['modules'][0][:-3] != req['package']:
+                notes.append('File: `%s`' % req['modules'][0])
+        else:
+            if req['modules'][0] != req['package']:
+                notes.append('Module: `%s`' % req['modules'][0])
 
     if req['notes']:
         notes.extend(packages_pattern.sub(wrap(r'\2', r'\1`', r'`\3'), note) for note in req['notes'])
