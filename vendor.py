@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # coding: utf-8
 """Vendor (or update existing) libraries."""
+import email.parser
 import os
 import re
 import shutil
@@ -14,7 +15,7 @@ from textwrap import dedent
 
 from pkg_resources import WorkingSet
 from pkg_resources._vendor.packaging.requirements import InvalidRequirement, Requirement
-from pkg_resources._vendor.packaging.version import parse as parse_version
+# from pkg_resources._vendor.packaging.version import parse as parse_version
 
 from parse_md import (
     LineParseError,
@@ -105,7 +106,7 @@ def main(listfile, package, py2, py3):
 
     installed = None
     for f in install_folders:
-        installed = vendor(root / f, package, package_name, py2=f.endswith('2'))
+        installed = vendor(root / f, package, parsed_package, py2=f.endswith('2'))
 
         print('Installed: %s==%s to %s' % (
             installed['package'], installed['version'], f
@@ -130,6 +131,7 @@ def main(listfile, package, py2, py3):
     dep_names = [d.name.lower() for d in dependencies]
     req_names = [r['package'].lower() for r in requirements]
 
+    # Check if a dependency of a previous version is not needed now and remove it
     installed_pkg_lower = installed['package'].lower()
     for idx, r in enumerate(requirements):
         r_pkg_lower = r['package'].lower()
@@ -140,6 +142,10 @@ def main(listfile, package, py2, py3):
             r['usage'].pop(idx)
             print('Removed `{0}` usage from dependency `{1}`'.format(installed['package'], r['package']))
 
+    # Check that the dependencies are installed (partial),
+    #   and that their versions match the new specifier (also partial)
+    deps_csv = ', '.join(map(str, dependencies)) or 'no dependencies'
+    print('Package {0} depends on: {1}'.format(installed['package'], deps_csv))
     for d in dependencies:
         d_pkg_lower = d.name.lower()
         if d_pkg_lower not in req_names:
@@ -150,14 +156,15 @@ def main(listfile, package, py2, py3):
             continue
         idx = req_names.index(d_pkg_lower)
         dep_req = requirements[idx]
-        ver = parse_version(dep_req['version'])
+        # ver = parse_version(dep_req['version'])
+        ver = dep_req['version']
         if ver not in d.specifier:
             if dep_req['git']:
                 print('May need to update {0} (git dependency) to match specifier: {1}'.format(dep_req['package'], d.specifier))
             else:
                 print('Need to update {0} from {1} to match specifier: {2}'.format(dep_req['package'], ver, d.specifier))
         if installed_pkg_lower not in map(str.lower, dep_req['usage']):
-            # print('Need to add {0} to the "usage" column of {1}'.format(installed['package'], dep_req['package']))
+            print('Adding {0} to the "usage" column of {1}'.format(installed['package'], dep_req['package']))
             dep_req['usage'].append(installed['package'])
 
     print('+++++++++++++++++++++')
@@ -195,8 +202,8 @@ def remove_all(paths):
             path.unlink()
 
 
-def vendor(vendor_dir, package, package_name, py2=False):
-    print('Installing vendored library `%s` to `%s`' % (package_name, vendor_dir.name))
+def vendor(vendor_dir, package, parsed_package, py2=False):
+    print('Installing vendored library `%s` to `%s`' % (parsed_package.name, vendor_dir.name))
 
     # We use `--no-deps` because we want to ensure that all of our dependencies are added to the list.
     # This includes all dependencies recursively up the chain.
@@ -211,7 +218,7 @@ def vendor(vendor_dir, package, package_name, py2=False):
     print('----- [ pip | py%d ] -----' % (2 if py2 else 3))
 
     working_set = WorkingSet([str(vendor_dir)])  # Must be a list to work
-    installed_pkg = next(iter(working_set.by_key.values()))
+    installed_pkg = working_set.by_key[parsed_package.name.lower()]
 
     dist_dir = Path(installed_pkg.egg_info)
     pkg_real_name = installed_pkg.project_name
@@ -247,7 +254,7 @@ def vendor(vendor_dir, package, package_name, py2=False):
         if name in top_level or name + '.py' in top_level:
             continue
         if (vendor_dir / (name + '.py')).is_file():
-            if name == package_name:
+            if name == parsed_package.name:
                 has_lower_name = 'File'
                 top_level.insert(0, name + '.py')
             elif name == pkg_real_name:
@@ -256,7 +263,7 @@ def vendor(vendor_dir, package, package_name, py2=False):
             else:
                 top_level.append(name + '.py')
         elif (vendor_dir / name).is_dir():
-            if name == package_name:
+            if name == parsed_package.name:
                 has_lower_name = 'Module'
                 top_level.insert(0, name)
             elif name == pkg_real_name:
@@ -279,37 +286,7 @@ def vendor(vendor_dir, package, package_name, py2=False):
         notes = []
 
     # Dependencies
-    using = None
-    checklist = [
-        dist_dir / 'PKG-INFO',
-        dist_dir / 'METADATA',
-    ]
-    while using is None and checklist:
-        checkpath = checklist.pop(0)
-        try:
-            with checkpath.open('r', encoding='utf-8') as fh:
-                raw_metadata = fh.read().splitlines(keepends=False)
-            using = checkpath.name
-        except IOError:
-            continue
-
-    if not using:
-        raise Exception('Unable to read dependencies info')
-
-    dependencies = []
-    while True:
-        try:
-            meta_line = raw_metadata.pop(0)
-        except IndexError:
-            break
-        if meta_line.startswith('Provides-Extra:'):
-            continue
-        # Requires-Dist: chardet (<3.1.0,>=3.0.2)
-        # Requires-Dist: win-inet-pton; (sys_platform == "win32" and python_version == "2.7") and extra == 'socks'
-        # Requires-Dist: funcsigs; python_version == "2.7"
-        if meta_line.startswith('Requires-Dist: ') and 'extra == ' not in meta_line:
-            meta_line = meta_line.replace('Requires-Dist: ', '')
-            dependencies.append(Requirement(meta_line))
+    dependencies = get_dependencies(installed_pkg, parsed_package)
 
     # Update version and url
     if 'github.com' in package:
@@ -362,6 +339,29 @@ def vendor(vendor_dir, package, package_name, py2=False):
     remove_all(vendor_dir.glob('msgpack/*.so'))
 
     return result
+
+
+def get_dependencies(installed_pkg, parsed_package):
+    raw_metadata = installed_pkg.get_metadata(installed_pkg.PKG_INFO)
+    metadata = email.parser.Parser().parsestr(raw_metadata)
+
+    deps = []
+    for meta_line in metadata.get_all('Requires-Dist'):
+        # Requires-Dist: chardet (<3.1.0,>=3.0.2)
+        # Requires-Dist: win-inet-pton; (sys_platform == "win32" and python_version == "2.7") and extra == 'socks'
+        # Requires-Dist: funcsigs; python_version == "2.7"
+        req = Requirement(meta_line)
+
+        def eval_extra(extra, python_version):
+            return req.marker.evaluate({'extra': extra, 'python_version': python_version})
+
+        extras = parsed_package.extras
+        eval_py27 = req.marker and any(eval_extra(ex, '2.7') for ex in extras)
+        eval_py35 = req.marker and any(eval_extra(ex, '3.5') for ex in extras)
+        if not req.marker or eval_py27 or eval_py35:
+            deps.append(req)
+
+    return deps
 
 
 if __name__ == '__main__':
