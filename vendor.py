@@ -122,6 +122,8 @@ def main(listfile, package, py2, py3):
                 if note not in installed['notes']
                 and not note.startswith(('Module: ', 'File: '))
             ]
+    else:
+        installed['usage'] = ['<UPDATE-ME>']
 
     print('+++++++++++++++++++++')
     print('+ Dependency checks +')
@@ -226,64 +228,90 @@ def vendor(vendor_dir, package, parsed_package, py2=False):
 
     using = None
     checklist = [
-        dist_dir / 'top_level.txt',
-        dist_dir / 'RECORD',
+        'top_level.txt',
+        'RECORD',
     ]
     while using is None and checklist:
         checkpath = checklist.pop(0)
         try:
-            with checkpath.open('r', encoding='utf-8') as fh:
-                raw_top_level = fh.read().splitlines(keepends=False)
-            using = checkpath.name
+            raw_top_level = installed_pkg.get_metadata(checkpath).splitlines(keepends=False)
+            using = checkpath
         except IOError:
-            continue
+            pass
 
     if not using:
         raise Exception('Unable to read module info')
 
+    # Make a simple list of top level directories / file names
+    parsed_top_level = []
+    for ln in raw_top_level:
+        if using == 'top_level.txt':
+            name = ln
+            if (vendor_dir / (name + '.py')).is_file():
+                name += '.py'
+            parsed_top_level.append(name)
+        elif using == 'RECORD':
+            # six-1.12.0.dist-info/top_level.txt,sha256=_iVH_iYEtEXnD8nYGQYpYFUvkUW9sEO1GYbkeKSAais,4
+            # six.py,sha256=h9jch2pS86y4R36pKRS3LOYUCVFNIJMRwjZ4fJDtJ44,32452
+            # setuptools/wheel.py,sha256=94uqXsOaKt91d9hW5z6ZppZmNSs_nO66R4uiwhcr4V0,8094
+
+            # Get the left-most name (directory or file) of the left-most item
+            name = ln.split(',', 1)[0].split('/', 1)[0]
+            if name.endswith(('.dist-info', '.egg-info')):
+                continue
+            parsed_top_level.append(name)
+
+    # Determine the main module and check how the name matches
     top_level = []
     has_lower_name = False
-    has_real_name = False
-    for ln in raw_top_level:
-        if using == 'RECORD':
-            name = ln.split(',', 1)[0].split('/', 1)[0]
-        elif using == 'top_level.txt':
-            name = ln
-        if name.endswith(('.dist-info', '.egg-info')):
+    for name in parsed_top_level:
+        # Skip already added
+        if name in top_level:
             continue
-        if name in top_level or name + '.py' in top_level:
-            continue
-        if (vendor_dir / (name + '.py')).is_file():
-            if name == parsed_package.name:
-                has_lower_name = 'File'
-                top_level.insert(0, name + '.py')
-            elif name == pkg_real_name:
-                has_real_name = 'File'
-                top_level.insert(0, name + '.py')
-            else:
-                top_level.append(name + '.py')
-        elif (vendor_dir / name).is_dir():
-            if name == parsed_package.name:
+
+        cur_path = vendor_dir / name
+        real_name = installed_pkg.project_name
+        lower_name = installed_pkg.project_name.lower()
+
+        if cur_path.is_dir():
+            # Top level package matches package name
+            # Example: requests
+            if name == real_name:
+                top_level.insert(0, name)
+                continue
+
+            # Top level package matches package name, only when it's lowercase
+            # Example: Mako
+            if name == lower_name:
+                top_level.insert(0, name)
                 has_lower_name = 'Module'
+                continue
+
+            # Append anything else to the end of the list because it's not the main module
+            top_level.append(name)
+
+        elif cur_path.is_file():
+            name_sans_py = name[:-3]
+            # Top level package matches package name
+            # Example: six (six.py)
+            if name_sans_py == real_name:
                 top_level.insert(0, name)
-            elif name == pkg_real_name:
-                has_real_name = 'Module'
+                continue
+
+            # Top level package matches package name, only when it's lowercase
+            # Example: ???.py (it's rare?)
+            if name_sans_py == lower_name:
                 top_level.insert(0, name)
-            else:
-                top_level.append(name)
+                has_lower_name = 'File'
+                continue
+
+            # Append anything else to the end of the list because it's not the main module
+            top_level.append(name)
 
     # Notes
     notes = []
-    if has_real_name:
-        notes.append('%s: %s' % (has_real_name, top_level[0]))
-    elif has_lower_name:
-        pass
-    else:
-        # print('Unable to determine if package name == module')
-        pass
-
-    if not notes:
-        notes = []
+    if has_lower_name:
+        notes.append('%s: %s' % (has_lower_name, top_level[0]))
 
     # Dependencies
     dependencies = get_dependencies(installed_pkg, parsed_package)
