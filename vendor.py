@@ -118,11 +118,7 @@ def main(listfile, package, py2, py3):
     if req_idx is not None:
         installed['usage'] = req['usage']
         if req['notes']:
-            installed['usage'] += [
-                note for note in req['notes']
-                if note not in installed['notes']
-                and not note.startswith(('Module: ', 'File: '))
-            ]
+            installed['notes'] += req['notes']
     else:
         installed['usage'] = ['<UPDATE-ME>']
 
@@ -223,8 +219,8 @@ def vendor(vendor_dir, package, parsed_package, py2=False):
     working_set = WorkingSet([str(vendor_dir)])  # Must be a list to work
     installed_pkg = working_set.by_key[parsed_package.name.lower()]
 
-    # Modules, Notes
-    modules, notes = get_modules_and_notes(vendor_dir, installed_pkg, parsed_package)
+    # Modules
+    modules = get_modules(vendor_dir, installed_pkg, parsed_package)
 
     # Dependencies
     dependencies = get_dependencies(installed_pkg, parsed_package)
@@ -240,7 +236,7 @@ def vendor(vendor_dir, package, parsed_package, py2=False):
     result['git'] = is_git
     result['url'] = url
     result['usage'] = []
-    result['notes'] = notes
+    result['notes'] = []
 
     result['dependencies'] = dependencies
 
@@ -260,7 +256,7 @@ def vendor(vendor_dir, package, parsed_package, py2=False):
     return result
 
 
-def get_modules_and_notes(vendor_dir, installed_pkg, parsed_package):
+def get_modules(vendor_dir, installed_pkg, parsed_package):
     using = None
     checklist = [
         'top_level.txt',
@@ -298,7 +294,6 @@ def get_modules_and_notes(vendor_dir, installed_pkg, parsed_package):
 
     # Determine the main module and check how the name matches
     top_level = []
-    has_lower_name = False
     for name in parsed_top_level:
         # Skip already added
         if name in top_level:
@@ -308,47 +303,31 @@ def get_modules_and_notes(vendor_dir, installed_pkg, parsed_package):
         real_name = installed_pkg.project_name
         lower_name = installed_pkg.project_name.lower()
 
-        if cur_path.is_dir():
-            # Top level package matches package name
-            # Example: requests
-            if name == real_name:
-                top_level.insert(0, name)
-                continue
+        # If a directory:
+        #   1. Top level package matches package name
+        #      Example: requests
+        #   2. Top level package matches package name, only when it's lowercase
+        #      Example: Mako
 
-            # Top level package matches package name, only when it's lowercase
-            # Example: Mako
-            if name == lower_name:
-                top_level.insert(0, name)
-                has_lower_name = 'Module'
-                continue
+        # If a file:
+        #   1. Top level package matches package name
+        #      Example: six (six.py)
+        #   2. Top level package matches package name, only when it's lowercase
+        #      Example: ???.py (it's rare?)
 
-            # Append anything else to the end of the list because it's not the main module
+        name_sans_py = name[:-3]
+        is_main_module = [
+            cur_path.is_dir() and name in (real_name, lower_name),
+            cur_path.is_file() and name_sans_py in (real_name, lower_name),
+        ]
+        if any(is_main_module):
+            top_level.insert(0, name)
+            continue
+        else:
             top_level.append(name)
 
-        elif cur_path.is_file():
-            name_sans_py = name[:-3]
-            # Top level package matches package name
-            # Example: six (six.py)
-            if name_sans_py == real_name:
-                top_level.insert(0, name)
-                continue
+    return top_level
 
-            # Top level package matches package name, only when it's lowercase
-            # Example: ???.py (it's rare?)
-            if name_sans_py == lower_name:
-                top_level.insert(0, name)
-                has_lower_name = 'File'
-                continue
-
-            # Append anything else to the end of the list because it's not the main module
-            top_level.append(name)
-
-    # Notes
-    notes = []
-    if has_lower_name:
-        notes.append('%s: %s' % (has_lower_name, top_level[0]))
-
-    return top_level, notes
 
 def get_dependencies(installed_pkg, parsed_package):
     raw_metadata = installed_pkg.get_metadata(installed_pkg.PKG_INFO)
