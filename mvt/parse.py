@@ -1,11 +1,10 @@
 # coding: utf-8
-"""
-Helper functions to parse vendor readme.md files
-"""
+"""Helper functions to parse vendor readme.md files."""
 
 import re
-from collections import OrderedDict
 from pathlib import Path
+
+from .models import VendoredLibrary
 
 # Strip code tags to make line pattern simpler, and remove line breaks
 STRIP_PATTERN = re.compile(r'</?code>|`|\n$', re.IGNORECASE)
@@ -47,7 +46,7 @@ class LineParseError(Exception):
 
 
 def parse_requirements(md_file: str):
-    # Yields (result, None) or (None, LineParseError)
+    """Yields `(VendoredLibrary, None)` or `(None, LineParseError)`."""
     file_path = Path(md_file)
     with file_path.open('r', encoding='utf-8') as file:
         lines = file.readlines()
@@ -118,15 +117,16 @@ def parse_requirements(md_file: str):
             module = package + first_item
         modules = [module or package] + extra_modules
 
-        result = OrderedDict()
-        result['folder'] = folder
-        result['package'] = package
-        result['version'] = version
-        result['modules'] = modules
-        result['git'] = bool(git)
-        result['url'] = url
-        result['usage'] = usage
-        result['notes'] = notes
+        result = VendoredLibrary(
+            folder=folder,
+            package=package,
+            version=version,
+            modules=modules,
+            git=bool(git),
+            url=url,
+            usage=usage,
+            notes=notes,
+        )
 
         yield result, None
 
