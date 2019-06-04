@@ -331,18 +331,12 @@ def get_modules(vendor_dir, installed_pkg, parsed_package):
 
         # If a file:
         #   1. Top level package matches package name
-        #      Example: six (six.py)
+        #      Example: six[.py]
         #   2. Top level package matches package name, only when it's lowercase
-        #      Example: ???.py (it's rare?)
+        #      Example: PackageName[.py] (it's rare?)
 
-        name_sans_py = name[:-3]
-        is_main_module = [
-            cur_path.is_dir() and name in (real_name, lower_name),
-            cur_path.is_file() and name_sans_py in (real_name, lower_name),
-        ]
-        if any(is_main_module):
+        if name in (real_name, lower_name) or cur_path.is_file() and name[:-3] in (real_name, lower_name):
             top_level.insert(0, name)
-            continue
         else:
             top_level.append(name)
 
