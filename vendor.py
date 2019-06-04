@@ -346,7 +346,7 @@ def get_dependencies(installed_pkg, parsed_package):
                     req.marker = Marker(old_marker + "extra == '{0}'".format(extra))
                     requires.append(req)
     else:
-        requires = metadata.get_all('Requires-Dist')
+        requires = metadata.get_all('Requires-Dist') or []
 
     deps = []
     for req in requires:
