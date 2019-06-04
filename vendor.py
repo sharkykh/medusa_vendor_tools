@@ -13,8 +13,9 @@ from difflib import ndiff
 from pathlib import Path
 from textwrap import dedent
 
-from pkg_resources import WorkingSet
+from pkg_resources import WorkingSet, EggInfoDistribution
 from pkg_resources._vendor.packaging.requirements import InvalidRequirement, Requirement
+from pkg_resources._vendor.packaging.markers import Marker
 # from pkg_resources._vendor.packaging.version import parse as parse_version
 
 from parse_md import (
@@ -353,12 +354,28 @@ def get_dependencies(installed_pkg, parsed_package):
     raw_metadata = installed_pkg.get_metadata(installed_pkg.PKG_INFO)
     metadata = email.parser.Parser().parsestr(raw_metadata)
 
+    if isinstance(installed_pkg, EggInfoDistribution):
+        requires = []
+        for extra, reqs in installed_pkg._dep_map.items():
+            if extra is None:
+                requires.extend(reqs)
+            else:
+                for req in reqs:
+                    old_marker = ''
+                    if req.marker:
+                        old_marker = '({0}) and '.format(req.marker)
+                    req.marker = Marker(old_marker + "extra == '{0}'".format(extra))
+                    requires.append(req)
+    else:
+        requires = metadata.get_all('Requires-Dist')
+
     deps = []
-    for meta_line in metadata.get_all('Requires-Dist'):
+    for req in requires:
         # Requires-Dist: chardet (<3.1.0,>=3.0.2)
         # Requires-Dist: win-inet-pton; (sys_platform == "win32" and python_version == "2.7") and extra == 'socks'
         # Requires-Dist: funcsigs; python_version == "2.7"
-        req = Requirement(meta_line)
+        if isinstance(req, str):
+            req = Requirement(req)
 
         def eval_extra(extra, python_version):
             return req.marker.evaluate({'extra': extra, 'python_version': python_version})
