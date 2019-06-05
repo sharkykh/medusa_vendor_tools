@@ -73,15 +73,24 @@ def main(listfile, package, py2, py3):
 
     print('Starting vendor script for: {}'.format(package_name + specifier))
 
-    # Remove old folder(s)/file(s) first using info from `ext/readme.md`
-    requirements = [req for req, _ in parse_requirements(listfile)]
-    req_idx = next(
-        (i for (i, req) in enumerate(requirements) if package_name.lower() == req['package'].lower()),
-        None
-    )
+    # Get requirements from list, put inde
+    requirements = []
+    req_idx = None
+    for index, (req, error) in enumerate(parse_requirements(listfile)):
+        if error:
+            raise error
+        requirements.append(req)
+
+        if package_name.lower() == req['package'].lower():
+            req_idx = index
+
+    # Remove the loop variables
+    del index, req, error
+
     if req_idx is not None:
         req = requirements[req_idx]
 
+        # Remove old folder(s)/file(s) first using info from `ext/readme.md`
         package_modules = [
             (root / f / mod)
             for mod in req['modules']
