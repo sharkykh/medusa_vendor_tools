@@ -72,6 +72,12 @@ def make_list_item(req, packages_pattern):
             usage.insert(0, r)
         else:
             usage.append(r)
+
+    if usage and 'medusa' in usage[0]:
+        usage = usage[:1] + sorted(usage[1:], key=str.lower)
+    else:
+        usage.sort(key=str.lower)
+
     usage = ', '.join(usage)
 
     # Notes
