@@ -220,8 +220,11 @@ def vendor(vendor_dir, package, parsed_package, py2=False):
     ] + (['--progress-bar', 'off'] if py2 else [])
 
     print('+++++ [ pip | py%d ] +++++' % (2 if py2 else 3))
-    subprocess.call(args)
+    pip_result = subprocess.call(args)
     print('----- [ pip | py%d ] -----' % (2 if py2 else 3))
+
+    if pip_result != 0:
+        raise Exception('Pip failed')
 
     working_set = WorkingSet([str(vendor_dir)])  # Must be a list to work
     installed_pkg = working_set.by_key[parsed_package.name.lower()]
