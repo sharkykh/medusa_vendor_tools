@@ -18,6 +18,10 @@ from pkg_resources._vendor.packaging.requirements import InvalidRequirement, Req
 from pkg_resources._vendor.packaging.markers import Marker
 # from pkg_resources._vendor.packaging.version import parse as parse_version
 
+from gen_requirements import (
+    main as gen_requirements
+)
+
 from parse_md import (
     LineParseError,
     parse_requirements,
@@ -168,7 +172,7 @@ def main(listfile, package, py2, py3):
 
     print('+++++++++++++++++++++')
 
-    print('Updating list')
+    print('Updating {0}'.format(listpath.name))
 
     if req_idx is not None:
         requirements[req_idx] = installed
@@ -179,6 +183,15 @@ def main(listfile, package, py2, py3):
 
     with listpath.open('w', encoding='utf-8', newline='\n') as fh:
         fh.write(''.join(md_data))
+
+    print('Updating requirements.txt')
+    reqs_file = root / 'requirements.txt'
+    gen_requirements(
+        infile=str(listpath.absolute()),
+        outfile=str(reqs_file.absolute()),
+        all_packages=False,
+        json_output=False,
+    )
 
     print('Done!')
 
