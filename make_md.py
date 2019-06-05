@@ -55,9 +55,10 @@ def make_list_item(req, packages_pattern):
 
     # Usage
     usage = []
-    for i, u in enumerate(req['usage']):
+    usage_last = []
+    for i, u in enumerate(sorted(req['usage'], key=str.lower)):
         if '?????' in u:
-            usage.append(u)
+            usage_last.append(u)
             continue
         if ' ' in u:
             ex = u.split(' ', 1)
@@ -68,17 +69,13 @@ def make_list_item(req, packages_pattern):
             t = '**`%s`**' if u == 'medusa' else '`%s`'
             r = t % u
 
-        if i == 0 and 'medusa' in u:
+        # if i == 0 and 'medusa' in u:
+        if 'medusa' in u:
             usage.insert(0, r)
         else:
             usage.append(r)
 
-    if usage and 'medusa' in usage[0]:
-        usage = usage[:1] + sorted(usage[1:], key=str.lower)
-    else:
-        usage.sort(key=str.lower)
-
-    usage = ', '.join(usage)
+    usage = ', '.join(usage + usage_last)
 
     # Notes
     notes = []
