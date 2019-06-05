@@ -363,7 +363,7 @@ def get_dependencies(installed_pkg, parsed_package):
         def eval_extra(extra, python_version):
             return req.marker.evaluate({'extra': extra, 'python_version': python_version})
 
-        extras = parsed_package.extras
+        extras = [None] + list(parsed_package.extras)
         eval_py27 = req.marker and any(eval_extra(ex, '2.7') for ex in extras)
         eval_py35 = req.marker and any(eval_extra(ex, '3.5') for ex in extras)
         if not req.marker or eval_py27 or eval_py35:
