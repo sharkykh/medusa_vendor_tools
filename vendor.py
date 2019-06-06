@@ -66,6 +66,14 @@ def main(listfile: str, package: str, py2: bool, py3: bool) -> None:
     package_name: str = parsed_package.name
 
     print(f'Starting vendor script for: {package_name}{parsed_package.specifier!s}')
+    if parsed_package.extras:
+        csv_extras = ','.join(parsed_package.extras)
+        print('=' * 60)
+        print(f'You provided a package with extra(s) ({package_name}[{csv_extras}]).')
+        print('Please note that extras can not be expressed on the lists!')
+        print('=' * 60)
+        if input('Press ENTER to continue (to abort - type anything and then press ENTER)'):
+            return
 
     # Get requirements from list, try to find the package we're vendoring right now
     requirements, req_idx = load_requirements(listpath, package_name)
