@@ -102,10 +102,10 @@ def main(listfile: str, package: str, py2: bool, py3: bool) -> None:
         install_folders = make_list_of_folders(target, py2, py3)
 
     installed = None
-    for f in install_folders:
-        installed = vendor(root / f, package, parsed_package, py2=f.endswith('2'))
+    for folder in install_folders:
+        installed = vendor(root / folder, package, parsed_package, py2=folder.endswith('2'))
 
-        print(f'Installed: {installed["package"]}=={installed["version"]} to {f}')
+        print(f'Installed: {installed["package"]}=={installed["version"]} to {folder}')
 
     installed['folder'] = install_folders
 
@@ -116,53 +116,8 @@ def main(listfile: str, package: str, py2: bool, py3: bool) -> None:
     else:
         installed['usage'] = ['<UPDATE-ME>']
 
-    print('+++++++++++++++++++++')
-    print('+ Dependency checks +')
-    print('+-------------------+')
-
-    dependencies = installed.pop('dependencies', [])
-    dep_names = [d.name.lower() for d in dependencies]
-    req_names = [r['package'].lower() for r in requirements]
-
-    # Check if a dependency of a previous version is not needed now and remove it
-    installed_pkg_name = installed['package']
-    installed_pkg_lower = installed_pkg_name.lower()
-    for idx, r in enumerate(requirements):
-        r_pkg_lower = r['package'].lower()
-
-        usage_lower = list(map(str.lower, r['usage']))
-        if installed_pkg_lower in usage_lower and r_pkg_lower not in dep_names:
-            idx = usage_lower.index(installed_pkg_lower)
-            r['usage'].pop(idx)
-            print(f'Removed `{installed_pkg_name}` usage from dependency `{r["package"]}`')
-
-    # Check that the dependencies are installed (partial),
-    #   and that their versions match the new specifier (also partial)
-    deps_csv = ', '.join(map(str, dependencies)) or 'no dependencies'
-    print(f'Package {installed_pkg_name} depends on: {deps_csv}')
-    for d in dependencies:
-        d_pkg_lower = d.name.lower()
-        if d_pkg_lower not in req_names:
-            specifier = str(d.specifier) or 'any version'
-            text = f'May need to install new dependency `{d.name}` @ {specifier}'
-            if d.marker:
-                text += f', but only for {d.marker!s}'
-            print(text)
-            continue
-        idx = req_names.index(d_pkg_lower)
-        dep_req = requirements[idx]
-        dep_req_name = dep_req['package']
-        dep_req_ver = dep_req['version']  # parse_version(dep_req['version'])
-        if dep_req_ver not in d.specifier:
-            if dep_req['git']:
-                print(f'May need to update {dep_req_name} (git dependency) to match specifier: {d.specifier}')
-            else:
-                print(f'Need to update {dep_req_name} from {dep_req_ver} to match specifier: {d.specifier}')
-        if installed_pkg_lower not in map(str.lower, dep_req['usage']):
-            print(f'Adding {installed_pkg_name} to the "usage" column of {dep_req_name}')
-            dep_req['usage'].append(installed_pkg_name)
-
-    print('+++++++++++++++++++++')
+    # Dependency checks
+    run_dependency_checks(installed, requirements)
 
     readme_name = '/'.join(listpath.absolute().parts[-2:])
     print(f'Updating {readme_name}')
@@ -225,6 +180,68 @@ def load_requirements(listpath: Path, package_name: str) -> (List[OrderedDict], 
             req_idx = index
 
     return requirements, req_idx
+
+
+def run_dependency_checks(installed: OrderedDict, requirements: List[OrderedDict]) -> None:
+    """
+    Run dependency checks.
+    - Check if a dependency of a previous version is not needed now and remove it
+    - Check that the dependencies are installed (partial),
+        and that their versions match the new specifier (also partial)
+
+    Note: May mutate items of `requirements`.
+    """
+    print('+++++++++++++++++++++')
+    print('+ Dependency checks +')
+    print('+-------------------+')
+
+    dependencies: List[Requirement] = installed.pop('dependencies', [])
+    installed_pkg_name: str = installed['package']
+    installed_pkg_lower = installed_pkg_name.lower()
+
+    deps_csv = ', '.join(map(str, dependencies)) or 'no dependencies'
+    print(f'Package {installed_pkg_name} depends on: {deps_csv}')
+
+    # Check if a dependency of a previous version is not needed now and remove it
+    dep_names: List[str] = [d.name.lower() for d in dependencies]
+    for idx, req in enumerate(requirements):
+        req_name = req['package']
+        usage_lower = list(map(str.lower, req['usage']))
+
+        if installed_pkg_lower in usage_lower and req_name.lower() not in dep_names:
+            idx = usage_lower.index(installed_pkg_lower)
+            req['usage'].pop(idx)
+            print(f'Removed `{installed_pkg_name}` usage from dependency `{req_name}`')
+
+    # Check that the dependencies are installed (partial),
+    #   and that their versions match the new specifier (also partial)
+    req_names: List[str] = [r['package'].lower() for r in requirements]
+    for dep in dependencies:
+        try:
+            dep_req_idx = req_names.index(dep.name.lower())
+        except ValueError:
+            # raised if dependency was not found
+            specifier = str(dep.specifier) or 'any version'
+            text = f'May need to install new dependency `{dep.name}` @ {specifier}'
+            if dep.marker:
+                text += f', but only for {dep.marker!s}'
+            print(text)
+            continue
+
+        dep_req = requirements[dep_req_idx]
+        dep_req_name = dep_req['package']
+        dep_req_ver = dep_req['version']  # parse_version(dep_req['version'])
+        if dep_req_ver not in dep.specifier:
+            if dep_req['git']:
+                print(f'May need to update {dep_req_name} (git dependency) to match specifier: {dep.specifier}')
+            else:
+                print(f'Need to update {dep_req_name} from {dep_req_ver} to match specifier: {dep.specifier}')
+
+        if installed_pkg_lower not in map(str.lower, dep_req['usage']):
+            print(f'Adding {installed_pkg_name} to the "usage" column of {dep_req_name}')
+            dep_req['usage'].append(installed_pkg_name)
+
+    print('+++++++++++++++++++++')
 
 
 def drop_dir(path: Path, **kwargs) -> None:
