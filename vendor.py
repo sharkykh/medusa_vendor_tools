@@ -69,9 +69,9 @@ def main(listfile, package, py2, py3):
             package_name = parsed_package.name
             specifier = str(parsed_package.specifier)
         else:
-            raise ValueError('Unable to parse {}'.format(package))
+            raise ValueError(f'Unable to parse {package}')
 
-    print('Starting vendor script for: {}'.format(package_name + specifier))
+    print(f'Starting vendor script for: {package_name}{specifier}')
 
     # Get requirements from list, try to find the package we're vendoring right now
     requirements = []
@@ -96,24 +96,24 @@ def main(listfile, package, py2, py3):
             for mod in req['modules']
             for f in req['folder']
         ]
-        print('Removing:', package_modules)
+        print(f'Removing: {package_modules!s}')
         try:
             remove_all(package_modules)
         except OSError:
             pass
 
         if not py2 and not py3:
-            print('Package %s found in list, using that' % package_name)
+            print(f'Package {package_name} found in list, using that')
             install_folders = req['folder']
         else:
-            print('Installing %s as a new package due to CLI switches' % package_name)
+            print(f'Installing {package_name} as a new package due to CLI switches')
             target = req['folder'][0].strip('23')
             install_folders = make_list_of_folders(target, py2, py3)
     else:
         if py2 or py3:
-            print('Installing %s as a new package due to CLI switches' % package_name)
+            print(f'Installing {package_name} as a new package due to CLI switches')
         else:
-            print('Package %s not found in list, assuming new package' % package_name)
+            print(f'Package {package_name} not found in list, assuming new package')
 
         target = listpath.parent.name  # ext | lib
         install_folders = make_list_of_folders(target, py2, py3)
@@ -122,9 +122,7 @@ def main(listfile, package, py2, py3):
     for f in install_folders:
         installed = vendor(root / f, package, parsed_package, py2=f.endswith('2'))
 
-        print('Installed: %s==%s to %s' % (
-            installed['package'], installed['version'], f
-        ))
+        print(f'Installed: {installed["package"]}=={installed["version"]} to {f}')
 
     installed['folder'] = install_folders
 
@@ -144,7 +142,8 @@ def main(listfile, package, py2, py3):
     req_names = [r['package'].lower() for r in requirements]
 
     # Check if a dependency of a previous version is not needed now and remove it
-    installed_pkg_lower = installed['package'].lower()
+    installed_pkg_name = installed['package']
+    installed_pkg_lower = installed_pkg_name.lower()
     for idx, r in enumerate(requirements):
         r_pkg_lower = r['package'].lower()
 
@@ -152,36 +151,38 @@ def main(listfile, package, py2, py3):
         if installed_pkg_lower in usage_lower and r_pkg_lower not in dep_names:
             idx = usage_lower.index(installed_pkg_lower)
             r['usage'].pop(idx)
-            print('Removed `{0}` usage from dependency `{1}`'.format(installed['package'], r['package']))
+            print(f'Removed `{installed_pkg_name}` usage from dependency `{r["package"]}`')
 
     # Check that the dependencies are installed (partial),
     #   and that their versions match the new specifier (also partial)
     deps_csv = ', '.join(map(str, dependencies)) or 'no dependencies'
-    print('Package {0} depends on: {1}'.format(installed['package'], deps_csv))
+    print(f'Package {installed_pkg_name} depends on: {deps_csv}')
     for d in dependencies:
         d_pkg_lower = d.name.lower()
         if d_pkg_lower not in req_names:
-            text = 'May need to install new dependency `{0}` @ {1}'.format(d.name, str(d.specifier) or 'any version')
+            specifier = str(d.specifier) or 'any version'
+            text = f'May need to install new dependency `{d.name}` @ {specifier}'
             if d.marker:
-                text += ', but only for {}'.format(str(d.marker))
+                text += f', but only for {d.marker!s}'
             print(text)
             continue
         idx = req_names.index(d_pkg_lower)
         dep_req = requirements[idx]
-        # ver = parse_version(dep_req['version'])
-        ver = dep_req['version']
-        if ver not in d.specifier:
+        dep_req_name = dep_req['package']
+        dep_req_ver = dep_req['version']  # parse_version(dep_req['version'])
+        if dep_req_ver not in d.specifier:
             if dep_req['git']:
-                print('May need to update {0} (git dependency) to match specifier: {1}'.format(dep_req['package'], d.specifier))
+                print(f'May need to update {dep_req_name} (git dependency) to match specifier: {d.specifier}')
             else:
-                print('Need to update {0} from {1} to match specifier: {2}'.format(dep_req['package'], ver, d.specifier))
+                print(f'Need to update {dep_req_name} from {dep_req_ver} to match specifier: {d.specifier}')
         if installed_pkg_lower not in map(str.lower, dep_req['usage']):
-            print('Adding {0} to the "usage" column of {1}'.format(installed['package'], dep_req['package']))
-            dep_req['usage'].append(installed['package'])
+            print(f'Adding {installed_pkg_name} to the "usage" column of {dep_req_name}')
+            dep_req['usage'].append(installed_pkg_name)
 
     print('+++++++++++++++++++++')
 
-    print('Updating {0}'.format(listpath.name))
+    readme_name = '/'.join(listpath.absolute().parts[-2:])
+    print(f'Updating {readme_name}')
 
     if req_idx is not None:
         requirements[req_idx] = installed
@@ -218,7 +219,7 @@ def remove_all(paths):
 
 
 def vendor(vendor_dir, package, parsed_package, py2=False):
-    print('Installing vendored library `%s` to `%s`' % (parsed_package.name, vendor_dir.name))
+    print(f'Installing vendored library `{parsed_package.name}` to `{vendor_dir.name}`')
 
     # We use `--no-deps` because we want to ensure that all of our dependencies are added to the list.
     # This includes all dependencies recursively up the chain.
@@ -228,9 +229,9 @@ def vendor(vendor_dir, package, parsed_package, py2=False):
         '--no-compile', '--no-deps', '--upgrade',
     ] + (['--progress-bar', 'off'] if py2 else [])
 
-    print('+++++ [ pip | py%d ] +++++' % (2 if py2 else 3))
+    print(f'+++++ [ pip | py{2 if py2 else 3} ] +++++')
     pip_result = subprocess.call(args)
-    print('----- [ pip | py%d ] -----' % (2 if py2 else 3))
+    print(f'----- [ pip | py{2 if py2 else 3} ] -----')
 
     if pip_result != 0:
         raise Exception('Pip failed')
@@ -355,8 +356,8 @@ def get_dependencies(installed_pkg, parsed_package):
                 for req in reqs:
                     old_marker = ''
                     if req.marker:
-                        old_marker = '({0}) and '.format(req.marker)
-                    req.marker = Marker(old_marker + "extra == '{0}'".format(extra))
+                        old_marker = f'({req.marker}) and '
+                    req.marker = Marker(old_marker + f"extra == '{extra}'")
                     requires.append(req)
     else:
         requires = metadata.get_all('Requires-Dist') or []
@@ -406,7 +407,7 @@ def get_version_and_url(package, installed_pkg):
     else:
         is_git = False
         version = installed_pkg.version
-        url = 'https://pypi.org/project/%s/%s/' % (installed_pkg.project_name, version)
+        url = f'https://pypi.org/project/{installed_pkg.project_name}/{version}/'
 
     return version, url, is_git
 
