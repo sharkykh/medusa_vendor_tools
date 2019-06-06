@@ -35,8 +35,6 @@ AnyDistribution = Union[
 ]
 
 
-# https://github.com/:owner/:repo@eea9ac18e38c930230cf81b5dca4a9af9fb10d4e
-# https://github.com/:owner/:repo.git@eea9ac18e38c930230cf81b5dca4a9af9fb10d4e
 # https://codeload.github.com/:owner/:repo/tar.gz/eea9ac18e38c930230cf81b5dca4a9af9fb10d4e
 # Not perfect, but close enough? Can't handle branches ATM anyway
 GITHUB_URL_PATTERN: Pattern = re.compile(r'github.com/(?P<slug>.+?/.+?)/.+/(?P<commit>[a-f0-9]{40})/?', re.IGNORECASE)
@@ -270,9 +268,9 @@ def vendor(vendor_dir: Path, package: str, parsed_package: Requirement, py2: boo
 
     # We use `--no-deps` because we want to ensure that all of our dependencies are added to the list.
     # This includes all dependencies recursively up the chain.
-    executable = 'py'
+    executable = 'py'  # Use the Windows launcher
     args: List[str] = [
-        executable,  # Use the Windows launcher
+        executable,
         '-3' if not py2 else '-2.7',
         '-m', 'pip', 'install', '--no-compile', '--no-deps', '--upgrade',
     ]
