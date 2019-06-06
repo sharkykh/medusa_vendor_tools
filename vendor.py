@@ -36,7 +36,7 @@ from make_md import (
 # https://github.com/:owner/:repo.git@eea9ac18e38c930230cf81b5dca4a9af9fb10d4e
 # https://codeload.github.com/:owner/:repo/tar.gz/eea9ac18e38c930230cf81b5dca4a9af9fb10d4e
 # Not perfect, but close enough? Can't handle branches ATM anyway
-GITHUB_URL_PATTERN = re.compile(r'github.com/(?P<slug>.+?/.+?)(?:\.git@|/tar\.gz/)?(?P<commit>[a-f0-9]{40})/?', re.IGNORECASE)
+GITHUB_URL_PATTERN = re.compile(r'github.com/(?P<slug>.+?/.+?)/.+/(?P<commit>[a-f0-9]{40})/?', re.IGNORECASE)
 
 DEFAULT_LISTFILE = 'ext/readme.md'
 
