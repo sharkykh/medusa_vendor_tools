@@ -60,18 +60,19 @@ def parse_requirements(md_file):
         if not line:
             break
 
+        line_copy = line[:]
         line = STRIP_PATTERN.sub('', line)
 
         # Split by columns
         columns = line.split(' | ')
         if len(columns) != 5:
-            yield None, LineParseError(line, line_no, section='columns')
+            yield None, LineParseError(line_copy, line_no, section='columns')
             continue
         folder, package, version, usage, notes = columns
 
         # Folder
         if not folder.strip():
-            yield None, LineParseError(line, line_no, folder, 'folder')
+            yield None, LineParseError(line_copy, line_no, folder, 'folder')
             continue
         folder = folder.strip(' *').split(' ')
 
@@ -84,21 +85,21 @@ def parse_requirements(md_file):
         # Package / Extra Modules
         match = PACKAGE_PATTERN.match(package)
         if not match:
-            yield None, LineParseError(line, line_no, package, 'package')
+            yield None, LineParseError(line_copy, line_no, package, 'package')
             continue
         package, extra_modules = match.groups()
 
         # Version
         match = VERSION_PATTERN.match(version)
         if not match:
-            yield None, LineParseError(line, line_no, version, 'version')
+            yield None, LineParseError(line_copy, line_no, version, 'version')
             continue
         git, version, url = match.groups()
 
         if git and not version:
             match = URL_COMMIT_PATTERN.search(url)
             if not match:
-                yield None, LineParseError(line, line_no, url, 'url')
+                yield None, LineParseError(line_copy, line_no, url, 'url')
                 continue
             version = match.group(1)
 
@@ -131,3 +132,21 @@ def parse_requirements(md_file):
         result['notes'] = notes
 
         yield result, None
+
+
+def test(file):
+    for req, error in parse_requirements(file):
+        if error:
+            raise error
+
+        print(f'Parsed package: {req["package"]}')
+
+
+if __name__ == '__main__':
+    import argparse
+    parser = argparse.ArgumentParser(description='Test parsing `ext/readme.md` or `lib/readme.md`')
+    parser.add_argument('file', help='The list file to test.')
+
+    args = parser.parse_args()
+
+    test(args.file)
