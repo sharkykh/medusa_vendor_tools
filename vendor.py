@@ -2,14 +2,11 @@
 # coding: utf-8
 """Vendor (or update existing) libraries."""
 import email.parser
-import os
 import re
 import shutil
 import subprocess
 import sys
 from collections import OrderedDict
-from contextlib import suppress
-from difflib import ndiff
 from pathlib import Path
 from textwrap import dedent
 
@@ -18,19 +15,9 @@ from pkg_resources._vendor.packaging.requirements import InvalidRequirement, Req
 from pkg_resources._vendor.packaging.markers import Marker
 # from pkg_resources._vendor.packaging.version import parse as parse_version
 
-from gen_requirements import (
-    main as gen_requirements
-)
-
-from parse_md import (
-    LineParseError,
-    parse_requirements,
-)
-from make_md import (
-    make_md,
-    make_packages_pattern,
-    make_list_item,
-)
+from gen_requirements import main as gen_requirements
+from make_md import make_md
+from parse_md import parse_requirements
 
 # https://github.com/:owner/:repo@eea9ac18e38c930230cf81b5dca4a9af9fb10d4e
 # https://github.com/:owner/:repo.git@eea9ac18e38c930230cf81b5dca4a9af9fb10d4e
