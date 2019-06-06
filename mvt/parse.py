@@ -141,14 +141,4 @@ def test(file):
         if error:
             raise error
 
-        print(f'Parsed package: {req["package"]}')
-
-
-if __name__ == '__main__':
-    import argparse
-    parser = argparse.ArgumentParser(description='Test parsing `ext/readme.md` or `lib/readme.md`')
-    parser.add_argument('file', help='The list file to test.')
-
-    args = parser.parse_args()
-
-    test(args.file)
+        print(f'Parsed package: {req.package}')

@@ -28,6 +28,9 @@ def main(args=None):
         help=f'export as JSON to `{DEFAULT_REQUIREMENTS_JSON}` (or OUTFILE)'
     )
 
+    parse_parser = subparsers.add_parser('parse', help='Test parsing `ext/readme.md` or `lib/readme.md`.')
+    parse_parser.add_argument('file', help='The list file to test.')
+
     args = parser.parse_args(args)
 
     if args.command == 'gen':
@@ -41,6 +44,10 @@ def main(args=None):
             all_packages=args.all_packages,
             json_output=args.json,
         )
+
+    if args.command == 'parse':
+        from .parse import test
+        test(args.file)
 
 
 if __name__ == '__main__':
