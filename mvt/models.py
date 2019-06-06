@@ -15,8 +15,8 @@ class VendoredLibrary:
     modules: List[str]
     git: bool
     url: str
-    usage: List[str]
-    notes: List[str]
+    usage: List[str] = []
+    notes: List[str] = []
 
     GIT_REPLACE_PATTERN = re.compile(r'/(?:tree|commits?)/', re.IGNORECASE)
 
@@ -40,9 +40,9 @@ class VendoredLibrary:
                 git_url = git_url.replace('https://github.com/', 'https://codeload.github.com/')
             else:
                 git_url = 'git+' + GIT_REPLACE_PATTERN.sub('.git@', self.url)
-            return git_url + '#egg=' + self.package + self.markers
+            return f'{git_url}#egg={self.package}{self.markers}'
         else:
-            return self.package + '==' + self.version + self.markers
+            return f'{self.package}=={self.version}{self.markers}'
 
     @property
     def markers(self):
