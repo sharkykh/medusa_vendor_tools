@@ -97,14 +97,11 @@ def main(listfile: str, package: str, py2: bool, py3: bool) -> None:
             print(f'Package {package_name} found in list, using that')
             install_folders = req['folder']
         else:
-            print(f'Installing {package_name} as a new package due to CLI switches')
+            print(f'Installing {package_name} to targets according to CLI switches')
             target = req['folder'][0].strip('23')
             install_folders = make_list_of_folders(target, py2, py3)
     else:
-        if py2 or py3:
-            print(f'Installing {package_name} as a new package due to CLI switches')
-        else:
-            print(f'Package {package_name} not found in list, assuming new package')
+        print(f'Package {package_name} not found in list, assuming new package')
 
         target = listpath.parent.name  # ext | lib
         install_folders = make_list_of_folders(target, py2, py3)
