@@ -73,7 +73,7 @@ def main(listfile, package, py2, py3):
 
     print('Starting vendor script for: {}'.format(package_name + specifier))
 
-    # Get requirements from list, put inde
+    # Get requirements from list, try to find the package we're vendoring right now
     requirements = []
     req_idx = None
     for index, (req, error) in enumerate(parse_requirements(listfile)):
