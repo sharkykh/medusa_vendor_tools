@@ -3,6 +3,11 @@
 
 import re
 from pathlib import Path
+from typing import (
+    Iterator,
+    Tuple,
+    Union,
+)
 
 from .models import VendoredLibrary
 
@@ -45,7 +50,7 @@ class LineParseError(Exception):
         return result
 
 
-def parse_requirements(md_file: str):
+def parse_requirements(md_file: str) -> Iterator[ Union[ Tuple[VendoredLibrary, None], Tuple[None, LineParseError] ] ]:
     """Yields `(VendoredLibrary, None)` or `(None, LineParseError)`."""
     file_path = Path(md_file)
     with file_path.open('r', encoding='utf-8') as file:
