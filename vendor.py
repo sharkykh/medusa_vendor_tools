@@ -57,21 +57,11 @@ def main(listfile, package, py2, py3):
     listpath = Path(listfile)
     root = listpath.parent.parent.absolute()
 
-    # Parse package name / version specifier from argument
-    try:
-        parsed_package = Requirement(package)
-        package_name = parsed_package.name
-        specifier = str(parsed_package.specifier)
-    except InvalidRequirement:
-        egg_value = re.search(r'#egg=(.+)(?:&|$)', package)
-        if egg_value:
-            parsed_package = Requirement(egg_value.group(1))
-            package_name = parsed_package.name
-            specifier = str(parsed_package.specifier)
-        else:
-            raise ValueError(f'Unable to parse {package}')
+    # Parse package name / version constraint from argument
+    parsed_package = parse_input(package)
+    package_name = parsed_package.name
 
-    print(f'Starting vendor script for: {package_name}{specifier}')
+    print(f'Starting vendor script for: {package_name}{parsed_package.specifier!s}')
 
     # Get requirements from list, try to find the package we're vendoring right now
     requirements = []
@@ -204,6 +194,20 @@ def main(listfile, package, py2, py3):
     )
 
     print('Done!')
+
+
+def parse_input(package: str) -> Requirement:
+    """Parse package name / version constraint from argument."""
+    try:
+        return Requirement(package)
+    except InvalidRequirement:
+        pass
+
+    egg_value = re.search(r'#egg=(.+)(?:&|$)', package)
+    if not egg_value:
+        raise ValueError(f'Unable to parse {package}')
+
+    return Requirement(egg_value.group(1))
 
 
 def drop_dir(path, **kwargs):
