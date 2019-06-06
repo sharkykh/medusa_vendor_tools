@@ -45,10 +45,11 @@ DEFAULT_LISTFILE = 'ext/readme.md'
 
 
 def make_list_of_folders(target: str, py2: bool, py3: bool) -> List[str]:
+    """Generate a list of target folders based on targeted Python versions."""
     install_folders: List[str] = []
-    if not py2 and not py3:  # normal
+    if not py2 and not py3:  # if neither, normal
         install_folders.append(target)
-    else:  # if both, separate codebase for each major version
+    else:  # if either one, or both, target for each major version
         if py2:  # py2 only
             install_folders.append(target + '2')
         if py3:  # py3 only
@@ -227,10 +228,12 @@ def load_requirements(listpath: Path, package_name: str) -> (List[OrderedDict], 
 
 
 def drop_dir(path: Path, **kwargs) -> None:
+    """Recursively delete the directory tree at `path`."""
     shutil.rmtree(str(path), **kwargs)
 
 
 def remove_all(paths: List[Path]) -> None:
+    """Recursively delete every file and directory tree of `paths`."""
     for path in paths:
         if path.is_dir():
             drop_dir(path)
@@ -239,6 +242,7 @@ def remove_all(paths: List[Path]) -> None:
 
 
 def vendor(vendor_dir: Path, package: str, parsed_package: Requirement, py2: bool = False) -> OrderedDict:
+    """Install `package` into `vendor_dir` using pip, and return a vendored package object."""
     print(f'Installing vendored library `{parsed_package.name}` to `{vendor_dir.name}`')
 
     # We use `--no-deps` because we want to ensure that all of our dependencies are added to the list.
@@ -297,6 +301,7 @@ def vendor(vendor_dir: Path, package: str, parsed_package: Requirement, py2: boo
 
 
 def get_modules(vendor_dir: Path, installed_pkg: AnyDistribution, parsed_package: Requirement) -> List[str]:
+    """Get a list of all the top-level modules/files names, with the "main" module being the first."""
     using: str = None
     checklist: List[str] = [
         'top_level.txt',
@@ -364,6 +369,7 @@ def get_modules(vendor_dir: Path, installed_pkg: AnyDistribution, parsed_package
 
 
 def get_dependencies(installed_pkg: AnyDistribution, parsed_package: Requirement) -> List[Requirement]:
+    """Get a list of all the installed package dependencies."""
     raw_metadata = installed_pkg.get_metadata(installed_pkg.PKG_INFO)
     metadata = email.parser.Parser().parsestr(raw_metadata)
 
@@ -402,7 +408,8 @@ def get_dependencies(installed_pkg: AnyDistribution, parsed_package: Requirement
     return deps
 
 
-def get_version_and_url(package: str, installed_pkg: AnyDistribution):
+def get_version_and_url(package: str, installed_pkg: AnyDistribution) -> (str, str, bool):
+    """Get the installed package's version and url, and whether or not it's a git dependency."""
     if 'github.com' in package:
         is_git = True
         match: re.Match = GITHUB_URL_PATTERN.search(package)
