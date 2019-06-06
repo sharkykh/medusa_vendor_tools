@@ -44,19 +44,6 @@ GITHUB_URL_PATTERN: Pattern = re.compile(r'github.com/(?P<slug>.+?/.+?)/.+/(?P<c
 DEFAULT_LISTFILE = 'ext/readme.md'
 
 
-def make_list_of_folders(target: str, py2: bool, py3: bool) -> List[str]:
-    """Generate a list of target folders based on targeted Python versions."""
-    install_folders: List[str] = []
-    if not py2 and not py3:  # if neither, normal
-        install_folders.append(target)
-    else:  # if either one, or both, target for each major version
-        if py2:  # py2 only
-            install_folders.append(target + '2')
-        if py3:  # py3 only
-            install_folders.append(target + '3')
-    return install_folders
-
-
 def main(listfile: str, package: str, py2: bool, py3: bool) -> None:
     listpath = Path(listfile)
     root = listpath.parent.parent.absolute()
@@ -185,6 +172,19 @@ def load_requirements(listpath: Path, package_name: str) -> (List[OrderedDict], 
             req_idx = index
 
     return requirements, req_idx
+
+
+def make_list_of_folders(target: str, py2: bool, py3: bool) -> List[str]:
+    """Generate a list of target folders based on targeted Python versions."""
+    install_folders: List[str] = []
+    if not py2 and not py3:  # if neither, normal
+        install_folders.append(target)
+    else:  # if either one, or both, target for each major version
+        if py2:  # py2 only
+            install_folders.append(target + '2')
+        if py3:  # py3 only
+            install_folders.append(target + '3')
+    return install_folders
 
 
 def run_dependency_checks(installed: OrderedDict, requirements: List[OrderedDict]) -> None:
