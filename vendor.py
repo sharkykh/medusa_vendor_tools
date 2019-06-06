@@ -23,9 +23,9 @@ from pkg_resources._vendor.packaging.requirements import InvalidRequirement, Req
 from pkg_resources._vendor.packaging.markers import Marker
 # from pkg_resources._vendor.packaging.version import parse as parse_version
 
+import parse_md
 from gen_requirements import main as gen_requirements
 from make_md import make_md
-from parse_md import parse_requirements
 
 # Typing
 AnyDistribution = Union[
@@ -67,18 +67,7 @@ def main(listfile: str, package: str, py2: bool, py3: bool) -> None:
     print(f'Starting vendor script for: {package_name}{parsed_package.specifier!s}')
 
     # Get requirements from list, try to find the package we're vendoring right now
-    requirements: List[OrderedDict] = []
-    req_idx: int = None
-    for index, (req, error) in enumerate(parse_requirements(listfile)):
-        if error:
-            raise error
-        requirements.append(req)
-
-        if package_name.lower() == req['package'].lower():
-            req_idx = index
-
-    # Remove the loop variables
-    del index, req, error
+    requirements, req_idx = load_requirements(listpath, package_name)
 
     if req_idx is not None:
         req = requirements[req_idx]
@@ -211,6 +200,30 @@ def parse_input(package: str) -> Requirement:
         raise ValueError(f'Unable to parse {package}')
 
     return Requirement(egg_value.group(1))
+
+
+def load_requirements(listpath: Path, package_name: str) -> (List[OrderedDict], Optional[int]):
+    """Get requirements from list, try to find the package we're vendoring right now."""
+    requirements: List[OrderedDict] = []
+    req_idx: Optional[int] = None
+
+    absolute_path = str(listpath.absolute())
+    generator = parse_md.parse_requirements(absolute_path)
+
+    package_name_lower = package_name.lower()
+    # Types for the loop variables
+    index: int
+    req: Optional[OrderedDict]
+    error: Optional[parse_md.LineParseError]
+    for index, (req, error) in enumerate(generator):
+        if error:
+            raise error
+        requirements.append(req)
+
+        if package_name_lower == req['package'].lower():
+            req_idx = index
+
+    return requirements, req_idx
 
 
 def drop_dir(path: Path, **kwargs) -> None:
