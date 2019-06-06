@@ -290,6 +290,14 @@ def vendor(vendor_dir: Path, package: str, parsed_package: Requirement, py2: boo
     if pip_result != 0:
         raise Exception('Pip failed')
 
+    # Drop the bin directory (contains easy_install, distro, chardetect etc.)
+    # Might not appear on all OSes, so ignoring errors
+    drop_dir(vendor_dir / 'bin', ignore_errors=True)
+
+    # Drop interpreter and OS specific files.
+    remove_all(vendor_dir.glob('**/*.pyd'))
+    remove_all(vendor_dir.glob('msgpack/*.so'))
+
     # Get installed package
     working_set = pkg_resources.WorkingSet([str(vendor_dir)])  # Must be a list to work
     installed_pkg: AnyDistribution = working_set.by_key[parsed_package.name.lower()]
@@ -317,16 +325,6 @@ def vendor(vendor_dir: Path, package: str, parsed_package: Requirement, py2: boo
 
     # Remove the package info folder
     drop_dir(Path(installed_pkg.egg_info))
-
-    # Drop the bin directory (contains easy_install, distro, chardetect etc.)
-    # Might not appear on all OSes, so ignoring errors
-    drop_dir(vendor_dir / 'bin', ignore_errors=True)
-
-    remove_all(vendor_dir.glob('**/*.pyd'))
-
-    # Drop interpreter and OS specific msgpack libs.
-    # Pip will rely on the python-only fallback instead.
-    remove_all(vendor_dir.glob('msgpack/*.so'))
 
     return result
 
