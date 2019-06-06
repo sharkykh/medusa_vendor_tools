@@ -9,8 +9,16 @@ import sys
 from collections import OrderedDict
 from pathlib import Path
 from textwrap import dedent
+from typing import (
+    List,
+    Mapping,
+    Match,
+    Optional,
+    Pattern,
+    Union,
+)
 
-from pkg_resources import WorkingSet, EggInfoDistribution
+import pkg_resources
 from pkg_resources._vendor.packaging.requirements import InvalidRequirement, Requirement
 from pkg_resources._vendor.packaging.markers import Marker
 # from pkg_resources._vendor.packaging.version import parse as parse_version
@@ -19,17 +27,25 @@ from gen_requirements import main as gen_requirements
 from make_md import make_md
 from parse_md import parse_requirements
 
+# Typing
+AnyDistribution = Union[
+    pkg_resources.Distribution,
+    pkg_resources.DistInfoDistribution,
+    pkg_resources.EggInfoDistribution
+]
+
+
 # https://github.com/:owner/:repo@eea9ac18e38c930230cf81b5dca4a9af9fb10d4e
 # https://github.com/:owner/:repo.git@eea9ac18e38c930230cf81b5dca4a9af9fb10d4e
 # https://codeload.github.com/:owner/:repo/tar.gz/eea9ac18e38c930230cf81b5dca4a9af9fb10d4e
 # Not perfect, but close enough? Can't handle branches ATM anyway
-GITHUB_URL_PATTERN = re.compile(r'github.com/(?P<slug>.+?/.+?)/.+/(?P<commit>[a-f0-9]{40})/?', re.IGNORECASE)
+GITHUB_URL_PATTERN: Pattern = re.compile(r'github.com/(?P<slug>.+?/.+?)/.+/(?P<commit>[a-f0-9]{40})/?', re.IGNORECASE)
 
 DEFAULT_LISTFILE = 'ext/readme.md'
 
 
-def make_list_of_folders(target, py2, py3):
-    install_folders = []
+def make_list_of_folders(target: str, py2: bool, py3: bool) -> List[str]:
+    install_folders: List[str] = []
     if not py2 and not py3:  # normal
         install_folders.append(target)
     else:  # if both, separate codebase for each major version
@@ -40,19 +56,19 @@ def make_list_of_folders(target, py2, py3):
     return install_folders
 
 
-def main(listfile, package, py2, py3):
+def main(listfile: str, package: str, py2: bool, py3: bool) -> None:
     listpath = Path(listfile)
     root = listpath.parent.parent.absolute()
 
     # Parse package name / version constraint from argument
     parsed_package = parse_input(package)
-    package_name = parsed_package.name
+    package_name: str = parsed_package.name
 
     print(f'Starting vendor script for: {package_name}{parsed_package.specifier!s}')
 
     # Get requirements from list, try to find the package we're vendoring right now
-    requirements = []
-    req_idx = None
+    requirements: List[OrderedDict] = []
+    req_idx: int = None
     for index, (req, error) in enumerate(parse_requirements(listfile)):
         if error:
             raise error
@@ -68,7 +84,7 @@ def main(listfile, package, py2, py3):
         req = requirements[req_idx]
 
         # Remove old folder(s)/file(s) first using info from `ext/readme.md`
-        package_modules = [
+        package_modules: List[Path] = [
             (root / f / mod)
             for mod in req['modules']
             for f in req['folder']
@@ -197,11 +213,11 @@ def parse_input(package: str) -> Requirement:
     return Requirement(egg_value.group(1))
 
 
-def drop_dir(path, **kwargs):
+def drop_dir(path: Path, **kwargs) -> None:
     shutil.rmtree(str(path), **kwargs)
 
 
-def remove_all(paths):
+def remove_all(paths: List[Path]) -> None:
     for path in paths:
         if path.is_dir():
             drop_dir(path)
@@ -209,13 +225,13 @@ def remove_all(paths):
             path.unlink()
 
 
-def vendor(vendor_dir, package, parsed_package, py2=False):
+def vendor(vendor_dir: Path, package: str, parsed_package: Requirement, py2: bool = False) -> OrderedDict:
     print(f'Installing vendored library `{parsed_package.name}` to `{vendor_dir.name}`')
 
     # We use `--no-deps` because we want to ensure that all of our dependencies are added to the list.
     # This includes all dependencies recursively up the chain.
-    prog = [sys.executable] if not py2 else ['py', '-2.7']
-    args = prog + [
+    prog: List[str] = [sys.executable] if not py2 else ['py', '-2.7']
+    args: List[str] = prog + [
         '-m', 'pip', 'install', '-t', str(vendor_dir), package,
         '--no-compile', '--no-deps', '--upgrade',
     ] + (['--progress-bar', 'off'] if py2 else [])
@@ -227,8 +243,8 @@ def vendor(vendor_dir, package, parsed_package, py2=False):
     if pip_result != 0:
         raise Exception('Pip failed')
 
-    working_set = WorkingSet([str(vendor_dir)])  # Must be a list to work
-    installed_pkg = working_set.by_key[parsed_package.name.lower()]
+    working_set = pkg_resources.WorkingSet([str(vendor_dir)])  # Must be a list to work
+    installed_pkg: AnyDistribution = working_set.by_key[parsed_package.name.lower()]
 
     # Modules
     modules = get_modules(vendor_dir, installed_pkg, parsed_package)
@@ -267,16 +283,16 @@ def vendor(vendor_dir, package, parsed_package, py2=False):
     return result
 
 
-def get_modules(vendor_dir, installed_pkg, parsed_package):
-    using = None
-    checklist = [
+def get_modules(vendor_dir: Path, installed_pkg: AnyDistribution, parsed_package: Requirement) -> List[str]:
+    using: str = None
+    checklist: List[str] = [
         'top_level.txt',
         'RECORD',
     ]
     while using is None and checklist:
-        checkpath = checklist.pop(0)
+        checkpath: str = checklist.pop(0)
         try:
-            raw_top_level = installed_pkg.get_metadata(checkpath).splitlines(keepends=False)
+            raw_top_level: List[str] = installed_pkg.get_metadata(checkpath).splitlines(keepends=False)
             using = checkpath
         except IOError:
             pass
@@ -285,7 +301,7 @@ def get_modules(vendor_dir, installed_pkg, parsed_package):
         raise Exception('Unable to read module info')
 
     # Make a simple list of top level directories / file names
-    parsed_top_level = []
+    parsed_top_level: List[str] = []
     for ln in raw_top_level:
         if using == 'top_level.txt':
             name = ln
@@ -304,7 +320,7 @@ def get_modules(vendor_dir, installed_pkg, parsed_package):
             parsed_top_level.append(name)
 
     # Determine the main module and check how the name matches
-    top_level = []
+    top_level: List[str] = []
     for name in parsed_top_level:
         # Skip already added
         if name in top_level:
@@ -334,11 +350,11 @@ def get_modules(vendor_dir, installed_pkg, parsed_package):
     return top_level
 
 
-def get_dependencies(installed_pkg, parsed_package):
+def get_dependencies(installed_pkg: AnyDistribution, parsed_package: Requirement) -> List[Requirement]:
     raw_metadata = installed_pkg.get_metadata(installed_pkg.PKG_INFO)
     metadata = email.parser.Parser().parsestr(raw_metadata)
 
-    if isinstance(installed_pkg, EggInfoDistribution):
+    if isinstance(installed_pkg, pkg_resources.EggInfoDistribution):
         requires = []
         for extra, reqs in installed_pkg._dep_map.items():
             if extra is None:
@@ -353,7 +369,7 @@ def get_dependencies(installed_pkg, parsed_package):
     else:
         requires = metadata.get_all('Requires-Dist') or []
 
-    deps = []
+    deps: List[Requirement] = []
     for req in requires:
         # Requires-Dist: chardet (<3.1.0,>=3.0.2)
         # Requires-Dist: win-inet-pton; (sys_platform == "win32" and python_version == "2.7") and extra == 'socks'
@@ -361,7 +377,7 @@ def get_dependencies(installed_pkg, parsed_package):
         if isinstance(req, str):
             req = Requirement(req)
 
-        def eval_extra(extra, python_version):
+        def eval_extra(extra: Optional[str], python_version: str) -> bool:
             return req.marker.evaluate({'extra': extra, 'python_version': python_version})
 
         extras = [None] + list(parsed_package.extras)
@@ -373,10 +389,10 @@ def get_dependencies(installed_pkg, parsed_package):
     return deps
 
 
-def get_version_and_url(package, installed_pkg):
+def get_version_and_url(package: str, installed_pkg: AnyDistribution):
     if 'github.com' in package:
         is_git = True
-        match = GITHUB_URL_PATTERN.search(package)
+        match: re.Match = GITHUB_URL_PATTERN.search(package)
         url = 'https://github.com/{slug}/tree/{commit}'
         if not match:
             print(dedent("""
@@ -392,7 +408,7 @@ def get_version_and_url(package, installed_pkg):
             version = sha1(b'commit').hexdigest()
             url = url.format(slug='unknown/unknown', commit=version)
         else:
-            groups = match.groupdict()
+            groups: Mapping[str, str] = match.groupdict()
             url = url.format(**groups)
             version = groups['commit']
     else:
