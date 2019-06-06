@@ -70,11 +70,12 @@ def main(listfile: str, package: str, py2: bool, py3: bool) -> None:
 
         # Remove old folder(s)/file(s) first using info from `ext/readme.md`
         package_modules: List[Path] = [
-            (root / f / mod)
-            for mod in req['modules']
-            for f in req['folder']
+            (root / folder / module)
+            for module in req['modules']
+            for folder in req['folder']
         ]
-        print(f'Removing: {package_modules!s}')
+        modules_csv = ', '.join(map(str, package_modules))
+        print(f'Removing: [{modules_csv}]')
         try:
             remove_all(package_modules)
         except OSError:
