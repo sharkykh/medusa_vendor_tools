@@ -247,19 +247,27 @@ def vendor(vendor_dir: Path, package: str, parsed_package: Requirement, py2: boo
 
     # We use `--no-deps` because we want to ensure that all of our dependencies are added to the list.
     # This includes all dependencies recursively up the chain.
-    prog: List[str] = [sys.executable] if not py2 else ['py', '-2.7']
-    args: List[str] = prog + [
-        '-m', 'pip', 'install', '-t', str(vendor_dir), package,
-        '--no-compile', '--no-deps', '--upgrade',
-    ] + (['--progress-bar', 'off'] if py2 else [])
+    executable = 'py'
+    args: List[str] = [
+        executable,  # Use the Windows launcher
+        '-3' if not py2 else '-2.7',
+        '-m', 'pip', 'install', '--no-compile', '--no-deps', '--upgrade',
+    ]
+    if py2:
+        # Some versions of pip for Python 2.7 on Windows have an issue where the progress bar can fail the install
+        args += ['--progress-bar', 'off']
+    args += ['--target', str(vendor_dir), package]
 
-    print(f'+++++ [ pip | py{2 if py2 else 3} ] +++++')
+    major_version = 2 if py2 else 3
+
+    print(f'+++++ [ pip | py{major_version} ] +++++')
     pip_result = subprocess.call(args)
-    print(f'----- [ pip | py{2 if py2 else 3} ] -----')
+    print(f'----- [ pip | py{major_version} ] -----')
 
     if pip_result != 0:
         raise Exception('Pip failed')
 
+    # Get installed package
     working_set = pkg_resources.WorkingSet([str(vendor_dir)])  # Must be a list to work
     installed_pkg: AnyDistribution = working_set.by_key[parsed_package.name.lower()]
 
