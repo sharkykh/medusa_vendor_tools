@@ -41,6 +41,17 @@ def main(args=None):
     # Command: sort
     sort_parser = subparsers.add_parser('sort', help='Sort `ext/readme.md` and `lib/readme.md` by package name.')
 
+    # Command: make
+    make_parser = subparsers.add_parser('make', help='Generate `ext/readme.md` from JSON')
+    make_parser.add_argument(
+        '-i', '--infile', default=DEFAULT_REQUIREMENTS_JSON, required=False,
+        help=f'JSON input file. Defaults to `{DEFAULT_REQUIREMENTS_JSON}`'
+    )
+    make_parser.add_argument(
+        '-o', '--outfile', default=DEFAULT_EXT_README, required=False,
+        help=f'Markdown output file. Defaults to `{DEFAULT_EXT_README}`'
+    )
+
     args = parser.parse_args(args)
 
     if args.command == 'gen':
@@ -67,6 +78,13 @@ def main(args=None):
         from .sort import sort_md
         sort_md(DEFAULT_EXT_README)
         sort_md(DEFAULT_LIB_README)
+
+    if args.command == 'make':
+        from .make_md import main as gen_md
+        gen_md(
+            infile=args.infile,
+            outfile=args.outfile,
+        )
 
 
 if __name__ == '__main__':
