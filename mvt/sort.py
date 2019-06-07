@@ -1,35 +1,37 @@
-#!/usr/bin/env python3
-#!/usr/bin/env python
 # coding: utf-8
-"""
-Sort `ext/readme.md` and `lib/readme.md` by package name.
-
-Usage - in the same folder with `start.py`, run:
-  python sort_md.py
-    or
-  ./sort_md.py
-"""
-
-from __future__ import absolute_import
-from __future__ import print_function
-from __future__ import unicode_literals
-
-import io
+"""Sort `ext/readme.md` and `lib/readme.md` by package name."""
 import re
+from pathlib import Path
+from typing import (
+    List,
+    Match,
+)
 
-from parse_md import (
+from .parse import (
+    LineParseError,
     PACKAGE_PATTERN,
     STRIP_PATTERN,
 )
 
-extfile = 'ext/readme.md'
-libfile = 'lib/readme.md'
+
+def _sort_key(line: str) -> str:
+    line_copy = line[:]
+    line = line.strip()
+    line = STRIP_PATTERN.sub('', line)
+    columns: List[str] = line.split(' | ')
+
+    match: Match = PACKAGE_PATTERN.match(columns[1])
+    if not match:
+        raise LineParseError(line_copy, '?', columns[1], 'package')
+    return match.group(1).lower()
 
 
-def sort_md(file):
-    with io.open(file, 'r', encoding='utf-8', newline='\n') as fh:
-        orig = fh.readlines()
+def sort_md(file: str) -> None:
+    filepath = Path(file)
+    with filepath.open('r', encoding='utf-8', newline='\n') as fh:
+        orig: List[str] = fh.readlines()
 
+    # Find the end of the list
     line_no = -1
     line = orig[line_no]
     while line.strip():
@@ -37,24 +39,9 @@ def sort_md(file):
         line = orig[line_no]
         continue
 
-    def sort_key(line):
-        line = line.strip()
-        line = STRIP_PATTERN.sub('', line)
-        columns = line.split(' | ')
+    header: List[str] = orig[slice(None, 3)]
+    new: List[str] = sorted(orig[slice(3, line_no)], key=_sort_key)
+    footer: List[str] = orig[slice(line_no, None)]
 
-        match = PACKAGE_PATTERN.match(columns[1])
-        if not match:
-            raise Exception('fail @', line)
-        return match.group(1).lower()
-
-    header = orig[slice(None, 3)]
-    new = sorted(orig[slice(3, line_no)], key=sort_key)
-    footer = orig[slice(line_no, None)]
-
-    with io.open(file, 'w', encoding='utf-8', newline='\n') as fh:
+    with filepath.open('w', encoding='utf-8', newline='\n') as fh:
         fh.writelines(header + new + footer)
-
-
-if __name__ == '__main__':
-    sort_md(extfile)
-    sort_md(libfile)

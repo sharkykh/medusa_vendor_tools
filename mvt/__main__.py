@@ -2,6 +2,7 @@
 import argparse
 
 DEFAULT_EXT_README = 'ext/readme.md'
+DEFAULT_LIB_README = 'lib/readme.md'
 DEFAULT_REQUIREMENTS_TXT = 'requirements.txt'
 DEFAULT_REQUIREMENTS_JSON = DEFAULT_REQUIREMENTS_TXT[:-3] + '.json'
 
@@ -37,6 +38,9 @@ def main(args=None):
     check_parser = subparsers.add_parser('check', help='Check vendor folders using `ext/readme.md` or `lib/readme.md`.')
     check_parser.add_argument('file', help='The list file to test.')
 
+    # Command: sort
+    sort_parser = subparsers.add_parser('sort', help='Sort `ext/readme.md` and `lib/readme.md` by package name.')
+
     args = parser.parse_args(args)
 
     if args.command == 'gen':
@@ -58,6 +62,11 @@ def main(args=None):
     if args.command == 'check':
         from .check import check
         check(args.file)
+
+    if args.command == 'sort':
+        from .sort import sort_md
+        sort_md(DEFAULT_EXT_README)
+        sort_md(DEFAULT_LIB_README)
 
 
 if __name__ == '__main__':
