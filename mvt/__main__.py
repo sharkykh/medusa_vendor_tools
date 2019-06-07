@@ -10,6 +10,7 @@ def main(args=None):
 
     subparsers = parser.add_subparsers(dest='command', required=True)
 
+    # Command: gen
     gen_parser = subparsers.add_parser('gen', help='Generate `requirements.txt` (or JSON) from `ext/readme.md`.')
     gen_parser.add_argument(
         '-i', '--infile', default=DEFAULT_EXT_README, required=False,
@@ -28,8 +29,13 @@ def main(args=None):
         help=f'export as JSON to `{DEFAULT_REQUIREMENTS_JSON}` (or OUTFILE)'
     )
 
+    # Command: parse
     parse_parser = subparsers.add_parser('parse', help='Test parsing `ext/readme.md` or `lib/readme.md`.')
     parse_parser.add_argument('file', help='The list file to test.')
+
+    # Command: check
+    check_parser = subparsers.add_parser('check', help='Check vendor folders using `ext/readme.md` or `lib/readme.md`.')
+    check_parser.add_argument('file', help='The list file to test.')
 
     args = parser.parse_args(args)
 
@@ -48,6 +54,10 @@ def main(args=None):
     if args.command == 'parse':
         from .parse import test
         test(args.file)
+
+    if args.command == 'check':
+        from .check import check
+        check(args.file)
 
 
 if __name__ == '__main__':
