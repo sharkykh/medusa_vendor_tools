@@ -5,17 +5,21 @@ from pathlib import Path
 from typing import (
     List,
     Optional,
+    Union,
 )
 
 from . import parse
 from .models import VendoredLibrary
 
 
-def check(infile: str) -> None:
-    root = Path(infile).parent.parent.absolute()
+def check(inpath: Union[Path, str]) -> None:
+    if not isinstance(inpath, Path):
+        inpath = Path(inpath)
+
+    root = inpath.parent.parent.absolute()
 
     all_found = True
-    generator = parse.parse_requirements(infile)
+    generator = parse.parse_requirements(inpath)
 
     # Types for the loop variables
     req: Optional[VendoredLibrary]

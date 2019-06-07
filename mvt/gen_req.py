@@ -11,10 +11,13 @@ from .parse import (
 )
 
 
-def generate_requirements(infile, outfile, all_packages=False, json_output=False):
+def generate_requirements(infile: str, outfile: str, all_packages: bool = False, json_output: bool = False) -> None:
+    inpath = Path(infile)
+    outpath = Path(outfile)
+
     requirements = []
     req: VendoredLibrary
-    for req, error in parse_requirements(infile):
+    for req, error in parse_requirements(inpath):
         if error:
             print(str(error), file=sys.stderr)
             continue
@@ -32,5 +35,5 @@ def generate_requirements(infile, outfile, all_packages=False, json_output=False
     else:
         data = ''.join(req.as_requirement() + '\n' for req in requirements)
 
-    with Path(outfile).open('w', encoding='utf-8', newline='\n') as fh:
+    with outpath.open('w', encoding='utf-8', newline='\n') as fh:
         fh.write(data)
