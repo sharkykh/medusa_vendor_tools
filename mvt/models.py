@@ -2,7 +2,7 @@
 
 import re
 from collections import OrderedDict
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import List
 
 
@@ -15,8 +15,8 @@ class VendoredLibrary:
     modules: List[str]
     git: bool
     url: str
-    usage: List[str] = []
-    notes: List[str] = []
+    usage: List[str] = field(default_factory=list)
+    notes: List[str] = field(default_factory=list)
 
     GIT_REPLACE_PATTERN = re.compile(r'/(?:tree|commits?)/', re.IGNORECASE)
 
