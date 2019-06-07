@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 # coding: utf-8
 """Vendor (or update existing) libraries."""
 import email.parser
@@ -6,7 +5,6 @@ import re
 import shutil
 import subprocess
 import sys
-from collections import OrderedDict
 from pathlib import Path
 from textwrap import dedent
 from typing import (
@@ -23,9 +21,10 @@ from pkg_resources._vendor.packaging.requirements import InvalidRequirement, Req
 from pkg_resources._vendor.packaging.markers import Marker
 # from pkg_resources._vendor.packaging.version import parse as parse_version
 
-import parse_md
-from gen_requirements import main as gen_requirements
-from make_md import make_md
+from . import parse as parse_md
+from .gen_req import generate_requirements
+from .make_md import make_md
+from .models import VendoredLibrary
 
 # Typing
 AnyDistribution = Union[
@@ -38,9 +37,6 @@ AnyDistribution = Union[
 # https://codeload.github.com/:owner/:repo/tar.gz/eea9ac18e38c930230cf81b5dca4a9af9fb10d4e
 # Not perfect, but close enough? Can't handle branches ATM anyway
 GITHUB_URL_PATTERN: Pattern = re.compile(r'github.com/(?P<slug>.+?/.+?)/.+/(?P<commit>[a-f0-9]{40})/?', re.IGNORECASE)
-
-DEFAULT_LISTFILE = 'ext/readme.md'
-
 
 def main(listfile: str, package: str, py2: bool, py3: bool) -> None:
     listpath = Path(listfile)
@@ -69,8 +65,8 @@ def main(listfile: str, package: str, py2: bool, py3: bool) -> None:
         # Remove old folder(s)/file(s) first using info from `ext/readme.md`
         package_modules: List[Path] = [
             (root / folder / module)
-            for module in req['modules']
-            for folder in req['folder']
+            for module in req.modules
+            for folder in req.folder
         ]
         modules_csv = ', '.join(map(str, package_modules))
         print(f'Removing: [{modules_csv}]')
@@ -81,10 +77,10 @@ def main(listfile: str, package: str, py2: bool, py3: bool) -> None:
 
         if not py2 and not py3:
             print(f'Package {package_name} found in list, using that')
-            install_folders = req['folder']
+            install_folders = req.folder
         else:
             print(f'Installing {package_name} to targets according to CLI switches')
-            target = req['folder'][0].strip('23')
+            target = req.folder[0].strip('23')
             install_folders = make_list_of_folders(target, py2, py3)
     else:
         print(f'Package {package_name} not found in list, assuming new package')
@@ -93,22 +89,22 @@ def main(listfile: str, package: str, py2: bool, py3: bool) -> None:
         install_folders = make_list_of_folders(target, py2, py3)
 
     installed = None
+    dependencies = None
     for folder in install_folders:
-        installed = vendor(root / folder, package, parsed_package, py2=folder.endswith('2'))
+        installed, dependencies = vendor(root / folder, package, parsed_package, py2=folder.endswith('2'))
 
-        print(f'Installed: {installed["package"]}=={installed["version"]} to {folder}')
+        print(f'Installed: {installed.package}=={installed.version} to {folder}')
 
-    installed['folder'] = install_folders
+    installed.folder = install_folders
 
     if req_idx is not None:
-        installed['usage'] = req['usage']
-        if req['notes']:
-            installed['notes'] += req['notes']
+        installed.usage = req.usage
+        installed.notes += req.notes
     else:
-        installed['usage'] = ['<UPDATE-ME>']
+        installed.usage = ['<UPDATE-ME>']
 
     # Dependency checks
-    run_dependency_checks(installed, requirements)
+    run_dependency_checks(installed, dependencies, requirements)
 
     readme_name = '/'.join(listpath.absolute().parts[-2:])
     print(f'Updating {readme_name}')
@@ -125,7 +121,7 @@ def main(listfile: str, package: str, py2: bool, py3: bool) -> None:
 
     print('Updating requirements.txt')
     reqs_file = root / 'requirements.txt'
-    gen_requirements(
+    generate_requirements(
         infile=str(listpath.absolute()),
         outfile=str(reqs_file.absolute()),
         all_packages=False,
@@ -149,25 +145,24 @@ def parse_input(package: str) -> Requirement:
     return Requirement(egg_value.group(1))
 
 
-def load_requirements(listpath: Path, package_name: str) -> (List[OrderedDict], Optional[int]):
+def load_requirements(listpath: Path, package_name: str) -> (List[VendoredLibrary], Optional[int]):
     """Get requirements from list, try to find the package we're vendoring right now."""
-    requirements: List[OrderedDict] = []
+    requirements: List[VendoredLibrary] = []
     req_idx: Optional[int] = None
 
-    absolute_path = str(listpath.absolute())
-    generator = parse_md.parse_requirements(absolute_path)
+    generator = parse_md.parse_requirements(listpath)
 
     package_name_lower = package_name.lower()
     # Types for the loop variables
     index: int
-    req: Optional[OrderedDict]
+    req: Optional[VendoredLibrary]
     error: Optional[parse_md.LineParseError]
     for index, (req, error) in enumerate(generator):
         if error:
             raise error
         requirements.append(req)
 
-        if package_name_lower == req['package'].lower():
+        if package_name_lower == req.package.lower():
             req_idx = index
 
     return requirements, req_idx
@@ -180,13 +175,13 @@ def make_list_of_folders(target: str, py2: bool, py3: bool) -> List[str]:
         install_folders.append(target)
     else:  # if either one, or both, target for each major version
         if py2:  # py2 only
-            install_folders.append(target + '2')
+            install_folders.append(f'{target}2')
         if py3:  # py3 only
-            install_folders.append(target + '3')
+            install_folders.append(f'{target}3')
     return install_folders
 
 
-def run_dependency_checks(installed: OrderedDict, requirements: List[OrderedDict]) -> None:
+def run_dependency_checks(installed: VendoredLibrary, dependencies: List[Requirement], requirements: List[VendoredLibrary]) -> None:
     """
     Run dependency checks.
     - Check if a dependency of a previous version is not needed now and remove it
@@ -199,27 +194,32 @@ def run_dependency_checks(installed: OrderedDict, requirements: List[OrderedDict
     print('+ Dependency checks +')
     print('+-------------------+')
 
-    dependencies: List[Requirement] = installed.pop('dependencies', [])
-    installed_pkg_name: str = installed['package']
+    installed_pkg_name: str = installed.package
     installed_pkg_lower = installed_pkg_name.lower()
 
-    deps_csv = ', '.join(map(str, dependencies)) or 'no dependencies'
-    print(f'Package {installed_pkg_name} depends on: {deps_csv}')
+    deps_psv = ' | '.join(map(str, dependencies)) or 'no dependencies'
+    print(f'Package {installed_pkg_name} depends on: {deps_psv}')
 
     # Check if a dependency of a previous version is not needed now and remove it
     dep_names: List[str] = [d.name.lower() for d in dependencies]
+    # Types for the loop variables
+    index: int
+    req: VendoredLibrary
     for idx, req in enumerate(requirements):
-        req_name = req['package']
-        usage_lower = list(map(str.lower, req['usage']))
+        req_name = req.package
+        usage_lower = list(map(str.lower, req.usage))
 
         if installed_pkg_lower in usage_lower and req_name.lower() not in dep_names:
             idx = usage_lower.index(installed_pkg_lower)
-            req['usage'].pop(idx)
+            req.usage.pop(idx)
             print(f'Removed `{installed_pkg_name}` usage from dependency `{req_name}`')
 
     # Check that the dependencies are installed (partial),
     #   and that their versions match the new specifier (also partial)
-    req_names: List[str] = [r['package'].lower() for r in requirements]
+    req_names: List[str] = [r.package.lower() for r in requirements]
+    # Types for the loop variables
+    index: int
+    dep: Requirement
     for dep in dependencies:
         try:
             dep_req_idx = req_names.index(dep.name.lower())
@@ -233,17 +233,17 @@ def run_dependency_checks(installed: OrderedDict, requirements: List[OrderedDict
             continue
 
         dep_req = requirements[dep_req_idx]
-        dep_req_name = dep_req['package']
-        dep_req_ver = dep_req['version']  # parse_version(dep_req['version'])
+        dep_req_name = dep_req.package
+        dep_req_ver = dep_req.version  # parse_version(dep_req.version)
         if dep_req_ver not in dep.specifier:
-            if dep_req['git']:
+            if dep_req.git:
                 print(f'May need to update {dep_req_name} (git dependency) to match specifier: {dep.specifier}')
             else:
                 print(f'Need to update {dep_req_name} from {dep_req_ver} to match specifier: {dep.specifier}')
 
-        if installed_pkg_lower not in map(str.lower, dep_req['usage']):
+        if installed_pkg_lower not in map(str.lower, dep_req.usage):
             print(f'Adding {installed_pkg_name} to the "usage" column of {dep_req_name}')
-            dep_req['usage'].append(installed_pkg_name)
+            dep_req.usage.append(installed_pkg_name)
 
     print('+++++++++++++++++++++')
 
@@ -262,8 +262,8 @@ def remove_all(paths: List[Path]) -> None:
             path.unlink()
 
 
-def vendor(vendor_dir: Path, package: str, parsed_package: Requirement, py2: bool = False) -> OrderedDict:
-    """Install `package` into `vendor_dir` using pip, and return a vendored package object."""
+def vendor(vendor_dir: Path, package: str, parsed_package: Requirement, py2: bool = False) -> (VendoredLibrary, List[Requirement]):
+    """Install `package` into `vendor_dir` using pip, and return a vendored package object and a list of dependencies."""
     print(f'Installing vendored library `{parsed_package.name}` to `{vendor_dir.name}`')
 
     # We use `--no-deps` because we want to ensure that all of our dependencies are added to the list.
@@ -309,22 +309,19 @@ def vendor(vendor_dir: Path, package: str, parsed_package: Requirement, py2: boo
     # Update version and url
     version, url, is_git = get_version_and_url(package, installed_pkg)
 
-    result = OrderedDict()
-    result['folder'] = [vendor_dir.name]
-    result['package'] = installed_pkg.project_name
-    result['version'] = version
-    result['modules'] = modules
-    result['git'] = is_git
-    result['url'] = url
-    result['usage'] = []
-    result['notes'] = []
-
-    result['dependencies'] = dependencies
+    result = VendoredLibrary(
+        folder=[vendor_dir.name],
+        package=installed_pkg.project_name,
+        version=version,
+        modules=modules,
+        git=is_git,
+        url=url,
+    )
 
     # Remove the package info folder
     drop_dir(Path(installed_pkg.egg_info))
 
-    return result
+    return result, dependencies
 
 
 def get_modules(vendor_dir: Path, installed_pkg: AnyDistribution, parsed_package: Requirement) -> List[str]:
@@ -464,17 +461,3 @@ def get_version_and_url(package: str, installed_pkg: AnyDistribution) -> (str, s
         url = f'https://pypi.org/project/{installed_pkg.project_name}/{version}/'
 
     return version, url, is_git
-
-
-if __name__ == '__main__':
-    import argparse
-    parser = argparse.ArgumentParser(description='Vendor package')
-    parser.add_argument('package', help='Package to vendor')
-    parser.add_argument('-2', '--py2', action='store_true', help='Install Python 2 version to ext2')
-    parser.add_argument('-3', '--py3', action='store_true', help='Install Python 3 version to ext3')
-    parser.add_argument('-i', '--listfile', default=DEFAULT_LISTFILE,
-                        help='List file to update (affects target folders). Defaults to `ext/readme.md`')
-
-    args = parser.parse_args()
-
-    main(**args.__dict__)

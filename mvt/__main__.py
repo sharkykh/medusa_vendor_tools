@@ -1,15 +1,24 @@
 # coding: utf-8
-import argparse
-
 DEFAULT_EXT_README = 'ext/readme.md'
 DEFAULT_LIB_README = 'lib/readme.md'
 DEFAULT_REQUIREMENTS_TXT = 'requirements.txt'
 DEFAULT_REQUIREMENTS_JSON = DEFAULT_REQUIREMENTS_TXT[:-3] + 'json'
 
 def main(args=None):
+    import argparse
     parser = argparse.ArgumentParser('mvt', description='Medusa Vendor Tools [MVT]')
 
     subparsers = parser.add_subparsers(dest='command', required=True)
+
+    # Command: vendor
+    vendor_parser = subparsers.add_parser('vendor', help='Vendor (or update existing) libraries.')
+    vendor_parser.add_argument('package', help='Package to vendor')
+    vendor_parser.add_argument('-2', '--py2', action='store_true', help='Install Python 2 version to ext2')
+    vendor_parser.add_argument('-3', '--py3', action='store_true', help='Install Python 3 version to ext3')
+    vendor_parser.add_argument(
+        '-f', '--listfile', default=DEFAULT_EXT_README,
+        help=f'List file to update (affects target folders). Defaults to `{DEFAULT_EXT_README}`'
+    )
 
     # Command: gen
     gen_parser = subparsers.add_parser('gen', help='Generate `requirements.txt` (or JSON) from `ext/readme.md`.')
@@ -53,6 +62,15 @@ def main(args=None):
     )
 
     args = parser.parse_args(args)
+
+    if args.command == 'vendor':
+        from .vendor import main as vendor
+        vendor(
+            listfile=args.listfile,
+            package=args.package,
+            py2=args.py2,
+            py3=args.py3,
+        )
 
     if args.command == 'gen':
         if args.json and args.outfile == DEFAULT_REQUIREMENTS_TXT:
