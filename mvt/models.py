@@ -58,4 +58,11 @@ class VendoredLibrary:
 
     @property
     def used_by_medusa(self):
-        return any('medusa' in u for u in self.usage)
+        return self.used_by('medusa')
+
+    def used_by(self, name):
+        name_lower = name.lower()
+        return any(
+            (name_lower in u) if ' ' in u else (name_lower == u)
+            for u in map(str.lower, self.usage)
+        )

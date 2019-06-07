@@ -196,7 +196,7 @@ def run_dependency_checks(installed: VendoredLibrary, dependencies: List[Require
     installed_pkg_lower = installed_pkg_name.lower()
 
     deps_psv = ' | '.join(map(str, dependencies)) or 'no dependencies'
-    print(f'Package {installed_pkg_name} depends on: {deps_psv}')
+    print(f'Package {installed_pkg_name} depends on: {deps_psv}\n')
 
     # Check if a dependency of a previous version is not needed now and remove it
     dep_names: List[str] = [d.name.lower() for d in dependencies]
@@ -208,9 +208,11 @@ def run_dependency_checks(installed: VendoredLibrary, dependencies: List[Require
         usage_lower = list(map(str.lower, req.usage))
 
         if installed_pkg_lower in usage_lower and req_name.lower() not in dep_names:
-            idx = usage_lower.index(installed_pkg_lower)
-            req.usage.pop(idx)
-            print(f'Removed `{installed_pkg_name}` usage from dependency `{req_name}`')
+            # Disabled automation, as some packages use logic in `setup.py` rather than markers :(
+            # idx = usage_lower.index(installed_pkg_lower)
+            # req.usage.pop(idx)
+            # print(f'Removed `{installed_pkg_name}` usage from dependency `{req_name}`')
+            print(f"Consider removing `{installed_pkg_name}` usage from dependency `{req_name}` (verify that it's not used)")
 
     # Check that the dependencies are installed (partial),
     #   and that their versions match the new specifier (also partial)
@@ -239,7 +241,7 @@ def run_dependency_checks(installed: VendoredLibrary, dependencies: List[Require
             else:
                 print(f'Need to update {dep_req_name} from {dep_req_ver} to match specifier: {dep.specifier}')
 
-        if installed_pkg_lower not in map(str.lower, dep_req.usage):
+        if not dep_req.used_by(installed_pkg_lower):
             print(f'Adding {installed_pkg_name} to the "usage" column of {dep_req_name}')
             dep_req.usage.append(installed_pkg_name)
 
