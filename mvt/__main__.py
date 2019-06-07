@@ -4,7 +4,7 @@ import argparse
 DEFAULT_EXT_README = 'ext/readme.md'
 DEFAULT_LIB_README = 'lib/readme.md'
 DEFAULT_REQUIREMENTS_TXT = 'requirements.txt'
-DEFAULT_REQUIREMENTS_JSON = DEFAULT_REQUIREMENTS_TXT[:-3] + '.json'
+DEFAULT_REQUIREMENTS_JSON = DEFAULT_REQUIREMENTS_TXT[:-3] + 'json'
 
 def main(args=None):
     parser = argparse.ArgumentParser('mvt', description='Medusa Vendor Tools [MVT]')
