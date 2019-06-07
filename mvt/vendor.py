@@ -39,8 +39,8 @@ AnyDistribution = Union[
 GITHUB_URL_PATTERN: Pattern = re.compile(r'github.com/(?P<slug>.+?/.+?)/.+/(?P<commit>[a-f0-9]{40})/?', re.IGNORECASE)
 
 def main(listfile: str, package: str, py2: bool, py3: bool) -> None:
-    listpath = Path(listfile)
-    root = listpath.parent.parent.absolute()
+    listpath = Path(listfile).absolute()
+    root = listpath.parent.parent
 
     # Parse package name / version constraint from argument
     parsed_package = parse_input(package)
@@ -58,6 +58,7 @@ def main(listfile: str, package: str, py2: bool, py3: bool) -> None:
 
     # Get requirements from list, try to find the package we're vendoring right now
     requirements, req_idx = load_requirements(listpath, package_name)
+    target = listpath.parent.name  # `ext` or `lib`
 
     if req_idx is not None:
         req = requirements[req_idx]
@@ -80,12 +81,9 @@ def main(listfile: str, package: str, py2: bool, py3: bool) -> None:
             install_folders = req.folder
         else:
             print(f'Installing {package_name} to targets according to CLI switches')
-            target = req.folder[0].strip('23')
             install_folders = make_list_of_folders(target, py2, py3)
     else:
         print(f'Package {package_name} not found in list, assuming new package')
-
-        target = listpath.parent.name  # ext | lib
         install_folders = make_list_of_folders(target, py2, py3)
 
     installed = None
@@ -106,7 +104,7 @@ def main(listfile: str, package: str, py2: bool, py3: bool) -> None:
     # Dependency checks
     run_dependency_checks(installed, dependencies, requirements)
 
-    readme_name = '/'.join(listpath.absolute().parts[-2:])
+    readme_name = '/'.join(listpath.parts[-2:])
     print(f'Updating {readme_name}')
 
     if req_idx is not None:
@@ -122,8 +120,8 @@ def main(listfile: str, package: str, py2: bool, py3: bool) -> None:
     print('Updating requirements.txt')
     reqs_file = root / 'requirements.txt'
     generate_requirements(
-        infile=str(listpath.absolute()),
-        outfile=str(reqs_file.absolute()),
+        infile=str(listpath),
+        outfile=str(reqs_file),
         all_packages=False,
         json_output=False,
     )
@@ -412,6 +410,9 @@ def get_dependencies(installed_pkg: AnyDistribution, parsed_package: Requirement
     else:
         requires = metadata.get_all('Requires-Dist') or []
 
+    def eval_extra(marker: Marker, extra: Optional[str], python_version: str) -> bool:
+        return marker.evaluate({'extra': extra, 'python_version': python_version})
+
     deps: List[Requirement] = []
     for req in requires:
         # Requires-Dist: chardet (<3.1.0,>=3.0.2)
@@ -420,12 +421,9 @@ def get_dependencies(installed_pkg: AnyDistribution, parsed_package: Requirement
         if isinstance(req, str):
             req = Requirement(req)
 
-        def eval_extra(extra: Optional[str], python_version: str) -> bool:
-            return req.marker.evaluate({'extra': extra, 'python_version': python_version})
-
         extras = [None] + list(parsed_package.extras)
-        eval_py27 = req.marker and any(eval_extra(ex, '2.7') for ex in extras)
-        eval_py35 = req.marker and any(eval_extra(ex, '3.5') for ex in extras)
+        eval_py27 = req.marker and any(eval_extra(req.marker, ex, '2.7') for ex in extras)
+        eval_py35 = req.marker and any(eval_extra(req.marker, ex, '3.5') for ex in extras)
         if not req.marker or eval_py27 or eval_py35:
             deps.append(req)
 
