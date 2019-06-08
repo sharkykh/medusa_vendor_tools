@@ -33,10 +33,11 @@ AnyDistribution = Union[
     pkg_resources.EggInfoDistribution
 ]
 
-
-# https://codeload.github.com/:owner/:repo/tar.gz/eea9ac18e38c930230cf81b5dca4a9af9fb10d4e
+# https://github.com/:owner/:repo/archive/eea9ac18e38c930230cf81b5dca4a9af9fb10d4e.tar.gz#egg=name
+# https://codeload.github.com/:owner/:repo/tar.gz/eea9ac18e38c930230cf81b5dca4a9af9fb10d4e#egg=name
 # Not perfect, but close enough? Can't handle branches ATM anyway
-GITHUB_URL_PATTERN: Pattern = re.compile(r'github.com/(?P<slug>.+?/.+?)/.+/(?P<commit>[a-f0-9]{40})/?', re.IGNORECASE)
+GITHUB_URL_PATTERN: Pattern = re.compile(r'github.com/(?P<slug>.+?/.+?)/.+/(?P<commit>[a-f0-9]{40})', re.IGNORECASE)
+
 
 def main(listfile: str, package: str, py2: bool, py3: bool) -> None:
     listpath = Path(listfile).absolute()
