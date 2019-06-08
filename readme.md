@@ -9,46 +9,52 @@ Tools for dealing with the vendored libraries and requirement lists in [**pymedu
 - They are **far from perfect**, and you should always verify the changes before committing / pushing them.
 - They are targeted towards Windows.
 
-## Plans
-- Hammer out the details on the vendor script. It's working but it feels very fragile.
-- Combine the tools into a package with one entrypoint script with sub-commands.
-- Make code more structured and more readable.
-
 ## Requirements
 - Python 3.6 or later
-##### Additionally, for the vendor script:
+##### Additionally, for the vendor command:
 - [Python Launcher (`py`)](https://docs.python.org/3/using/windows.html#launcher) installed and in PATH
 - Latest Python 2.7 installed and executable using `py -2.7`
 - `pip` library installed
 - [`setuptools`](https://pypi.org/project/setuptools) library installed
 
+## Installation
+```
+pip install https://github.com/sharkykh/medusa_vendor_tools/archive/master.tar.gz
+```
+or by cloning this repository:
+```
+git clone https://github.com/sharkykh/medusa_vendor_tools
+cd medusa_vendor_tools
+pip install .
+```
+
 ## Usage
-The scripts require that you run them with your in Medusa's root folder, meaning:
+The script requires that you run it within your Medusa's root folder, meaning:
 ```shell
 cd /path/to/Medusa
-python /path/to/medusa_vendor_tools/<script>.py [<arguments>]
+mvt -h
+mvt <command> [-h | <arguments>]
 ```
-You can use `-h` to see some help on some of the scripts.
 
-## Contents
+## Commands
 
-#### [`check.py`](/check.py)
-Check vendor folders using `ext/readme.md`.
+#### [`mvt vendor`](/mvt/vendor.py)
+Vendor (or update existing) libraries.
 
-#### [`gen_requirements.py`](/gen_requirements.py)
+#### [`mvt gen`](/mvt/gen_req.py)
 Generate `requirements.txt` (or JSON) from `ext/readme.md`.
 
-#### [`make_md.py`](/make_md.py)
-Helper functions to generate vendor readme.md files from JSON spec.
+#### [`mvt parse`](/mvt/parse.py)
+Test parsing `ext/readme.md` or `lib/readme.md`.
 
-#### [`parse_md.py`](/parse_md.py)
-Helper functions to parse vendor readme.md files.
+#### [`mvt check`](/mvt/check.py)
+Check vendor folders using `ext/readme.md` or `lib/readme.md`.
 
-#### [`sort_md.py`](/sort_md.py)
+#### [`mvt sort`](/mvt/sort.py)
 Sort `ext/readme.md` and `lib/readme.md` by package name.
 
-#### [`vendor.py`](/vendor.py)
-Vendor (or update existing) libraries.
+#### [`mvt make`](/mvt/make_md.py)
+Generate `ext/readme.md` from `requirements.json`.
 
 ## A list of the targeted files and folders
 - [`ext`](https://github.com/pymedusa/Medusa/tree/develop/ext) - Vendored libraries that are Python2/Python3 compatible.
