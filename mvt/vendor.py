@@ -33,6 +33,8 @@ AnyDistribution = Union[
     pkg_resources.EggInfoDistribution
 ]
 
+MIN_PYTHON_2 = '2.7.10'
+MIN_PYTHON_3 = '3.5.2'
 # https://github.com/:owner/:repo/archive/eea9ac18e38c930230cf81b5dca4a9af9fb10d4e.tar.gz#egg=name
 # https://codeload.github.com/:owner/:repo/tar.gz/eea9ac18e38c930230cf81b5dca4a9af9fb10d4e#egg=name
 # Not perfect, but close enough? Can't handle branches ATM anyway
@@ -425,8 +427,8 @@ def get_dependencies(installed_pkg: AnyDistribution, parsed_package: Requirement
             req = Requirement(req)
 
         extras = [None] + list(parsed_package.extras)
-        eval_py27 = req.marker and any(eval_extra(req.marker, ex, '2.7') for ex in extras)
-        eval_py35 = req.marker and any(eval_extra(req.marker, ex, '3.5') for ex in extras)
+        eval_py27 = req.marker and any(eval_extra(req.marker, ex, MIN_PYTHON_2) for ex in extras)
+        eval_py35 = req.marker and any(eval_extra(req.marker, ex, MIN_PYTHON_3) for ex in extras)
         if not req.marker or eval_py27 or eval_py35:
             deps.append(req)
 
