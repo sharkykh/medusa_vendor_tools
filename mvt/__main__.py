@@ -1,17 +1,21 @@
 # coding: utf-8
+from . import __version__
+
 DEFAULT_EXT_README = 'ext/readme.md'
 DEFAULT_LIB_README = 'lib/readme.md'
 DEFAULT_REQUIREMENTS_TXT = 'requirements.txt'
 DEFAULT_REQUIREMENTS_JSON = DEFAULT_REQUIREMENTS_TXT[:-3] + 'json'
 
+
 def main(args=None):
     import argparse
-    parser = argparse.ArgumentParser('mvt', description='Medusa Vendor Tools [MVT]')
+    parser = argparse.ArgumentParser('mvt', description=f'Medusa Vendor Tools [MVT] v{__version__}')
 
-    subparsers = parser.add_subparsers(dest='command', required=True)
+    subparsers = parser.add_subparsers(metavar='command', help='The task to perform', dest='command', required=True)
 
     # Command: vendor
-    vendor_parser = subparsers.add_parser('vendor', help='Vendor (or update existing) libraries.')
+    vendor_help = 'Vendor (or update existing) libraries.'
+    vendor_parser = subparsers.add_parser('vendor', help=vendor_help, description=vendor_help)
     vendor_parser.add_argument('package', help='Package to vendor')
     vendor_parser.add_argument('-2', '--py2', action='store_true', help='Install Python 2 version to ext2')
     vendor_parser.add_argument('-3', '--py3', action='store_true', help='Install Python 3 version to ext3')
@@ -21,7 +25,8 @@ def main(args=None):
     )
 
     # Command: gen
-    gen_parser = subparsers.add_parser('gen', help='Generate `requirements.txt` (or JSON) from `ext/readme.md`.')
+    gen_help = 'Generate `requirements.txt` (or JSON) from `ext/readme.md`.'
+    gen_parser = subparsers.add_parser('gen', help=gen_help, description=gen_help)
     gen_parser.add_argument(
         '-i', '--infile', default=DEFAULT_EXT_README, required=False,
         help=f'Input file. Defaults to `{DEFAULT_EXT_README}`'
@@ -40,18 +45,22 @@ def main(args=None):
     )
 
     # Command: parse
-    parse_parser = subparsers.add_parser('parse', help='Test parsing `ext/readme.md` or `lib/readme.md`.')
+    parse_help = 'Test parsing `ext/readme.md` or `lib/readme.md`.'
+    parse_parser = subparsers.add_parser('parse', help=parse_help, description=parse_help)
     parse_parser.add_argument('file', help='The list file to test.')
 
     # Command: check
-    check_parser = subparsers.add_parser('check', help='Check vendor folders using `ext/readme.md` or `lib/readme.md`.')
+    check_help = 'Check vendor folders using `ext/readme.md` or `lib/readme.md`.'
+    check_parser = subparsers.add_parser('check', help=check_help, description=check_help)
     check_parser.add_argument('file', help='The list file to test.')
 
     # Command: sort
-    sort_parser = subparsers.add_parser('sort', help='Sort `ext/readme.md` and `lib/readme.md` by package name.')
+    sort_help = 'Sort `ext/readme.md` and `lib/readme.md` by package name.'
+    sort_parser = subparsers.add_parser('sort', help=sort_help, description=sort_help)
 
     # Command: make
-    make_parser = subparsers.add_parser('make', help='Generate `ext/readme.md` from JSON')
+    make_help = 'Generate `ext/readme.md` from `requirements.json`.'
+    make_parser = subparsers.add_parser('make', help=make_help, description=make_help)
     make_parser.add_argument(
         '-i', '--infile', default=DEFAULT_REQUIREMENTS_JSON, required=False,
         help=f'JSON input file. Defaults to `{DEFAULT_REQUIREMENTS_JSON}`'
