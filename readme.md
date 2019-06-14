@@ -14,15 +14,15 @@ Tools for dealing with the vendored libraries and requirement lists in [**pymedu
 ##### Additionally, for the vendor command:
 - [Python Launcher (`py`)](https://docs.python.org/3/using/windows.html#launcher) installed and in PATH
 - Latest Python 2.7 installed and executable using `py -2.7`
-- `pip` library installed
+- `pip` tool installed
 - [`setuptools`](https://pypi.org/project/setuptools) library installed
 
 ## Installation
-```
+```shell
 pip install https://github.com/sharkykh/medusa_vendor_tools/archive/master.tar.gz
 ```
 or by cloning this repository:
-```
+```shell
 git clone https://github.com/sharkykh/medusa_vendor_tools
 cd medusa_vendor_tools
 pip install .
@@ -40,23 +40,84 @@ mvt <command> [-h | <arguments>]
 
 #### [`mvt vendor`](/mvt/vendor.py)
 Vendor (or update existing) libraries.
+```
+usage: mvt vendor [-h] [-2] [-3] [-f LISTFILE] package
+
+positional arguments:
+  package               Package to vendor
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -2, --py2             Install Python 2 version to ext2
+  -3, --py3             Install Python 3 version to ext3
+  -f LISTFILE, --listfile LISTFILE
+                        List file to update (affects target folders). Defaults
+                        to `ext/readme.md`
+```
 
 #### [`mvt gen`](/mvt/gen_req.py)
 Generate `requirements.txt` (or JSON) from `ext/readme.md`.
+```
+usage: mvt gen [-h] [-i INFILE] [-o OUTFILE] [-a] [-j]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -i INFILE, --infile INFILE
+                        Input file. Defaults to `ext/readme.md`
+  -o OUTFILE, --outfile OUTFILE
+                        Output file. Defaults to `requirements.txt` (with
+                        `--json`: `requirements.json`)
+  -a, --all-packages    List all packages, not just those used by Medusa
+  -j, --json            export as JSON to `requirements.json` (or OUTFILE)
+```
 
 #### [`mvt parse`](/mvt/parse.py)
 Test parsing `ext/readme.md` or `lib/readme.md`.
+```
+usage: mvt parse [-h] file
+
+positional arguments:
+  file        The list file to test.
+
+optional arguments:
+  -h, --help  show this help message and exit
+```
 
 #### [`mvt check`](/mvt/check.py)
 Check vendor folders using `ext/readme.md` or `lib/readme.md`.
+```
+usage: mvt check [-h] file
+
+positional arguments:
+  file        The list file to test.
+
+optional arguments:
+  -h, --help  show this help message and exit
+```
 
 #### [`mvt sort`](/mvt/sort.py)
 Sort `ext/readme.md` and `lib/readme.md` by package name.
+```
+usage: mvt sort [-h]
+
+optional arguments:
+  -h, --help  show this help message and exit
+```
 
 #### [`mvt make`](/mvt/make_md.py)
 Generate `ext/readme.md` from `requirements.json`.
+```
+usage: mvt make [-h] [-i INFILE] [-o OUTFILE]
 
-## A list of the targeted files and folders
+optional arguments:
+  -h, --help            show this help message and exit
+  -i INFILE, --infile INFILE
+                        JSON input file. Defaults to `requirements.json`
+  -o OUTFILE, --outfile OUTFILE
+                        Markdown output file. Defaults to `ext/readme.md`
+```
+
+## Targeted files and folders
 - [`ext`](https://github.com/pymedusa/Medusa/tree/develop/ext) - Vendored libraries that are Python2/Python3 compatible.
 - [`ext2`](https://github.com/pymedusa/Medusa/tree/develop/ext2) - Vendored libraries that are only for Python2.
 - [`ext3`](https://github.com/pymedusa/Medusa/tree/develop/ext3) - Vendored libraries that are only for Python3.
