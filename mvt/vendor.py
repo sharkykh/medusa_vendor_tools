@@ -42,7 +42,7 @@ GITHUB_URL_PATTERN: Pattern = re.compile(r'github.com/(?P<slug>.+?/.+?)/.+/(?P<c
 
 
 def main(listfile: str, package: str, py2: bool, py3: bool) -> None:
-    listpath = Path(listfile).absolute()
+    listpath = Path(listfile).resolve()
     root = listpath.parent.parent
 
     # Parse package name / version constraint from argument

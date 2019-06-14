@@ -16,7 +16,7 @@ def check(inpath: Union[Path, str]) -> None:
     if not isinstance(inpath, Path):
         inpath = Path(inpath)
 
-    root = inpath.parent.parent.absolute()
+    root = inpath.parent.parent.resolve()
 
     all_found = True
     generator = parse.parse_requirements(inpath)
