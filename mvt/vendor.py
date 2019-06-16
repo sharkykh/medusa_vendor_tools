@@ -139,11 +139,14 @@ def parse_input(package: str) -> Requirement:
     except InvalidRequirement:
         pass
 
-    egg_value = re.search(r'#egg=(.+)(?:&|$)', package)
-    if not egg_value:
-        raise ValueError(f'Unable to parse {package}')
+    try:
+        egg_value = re.search(r'#egg=(.+)(?:&|$)', package)
+        package = f'{egg_value.group(1)}@{package}'
+        return Requirement(package)
+    except (InvalidRequirement, TypeError):  # TypeError: NoneType when not matched
+        pass
 
-    return Requirement(egg_value.group(1))
+    raise ValueError(f'Unable to parse {package}')
 
 
 def load_requirements(listpath: Path, package_name: str) -> (List[VendoredLibrary], Optional[int]):
