@@ -1,16 +1,15 @@
 # coding: utf-8
-"""
-Helper functions to parse vendor readme.md files
-"""
+"""Helper functions to parse vendor readme.md files."""
 
-from __future__ import absolute_import
-from __future__ import print_function
-from __future__ import unicode_literals
-
-import io
 import re
+from pathlib import Path
+from typing import (
+    Iterator,
+    Tuple,
+    Union,
+)
 
-from collections import OrderedDict
+from .models import VendoredLibrary
 
 # Strip code tags to make line pattern simpler, and remove line breaks
 STRIP_PATTERN = re.compile(r'</?code>|`|\n$', re.IGNORECASE)
@@ -21,13 +20,13 @@ URL_COMMIT_PATTERN = re.compile(r'/([a-f0-9]{40})/?', re.IGNORECASE)
 
 class LineParseError(Exception):
     """Raised when unable to parse requirement line."""
-    def __init__(self, line, line_no, part=None, section=None):
+    def __init__(self, line: str, line_no: int, part: str = None, section: str = None):
         self.line = line
         self.line_no = line_no
         self.part = part
         self.section = section
 
-    def __str__(self):
+    def __str__(self) -> str:
         failed_header = 'Failed to parse {0} on line {1}:'.format(self.section or 'line', self.line_no)
         line_header = 'Full line ({0}):'.format(self.line_no)
 
@@ -51,8 +50,9 @@ class LineParseError(Exception):
         return result
 
 
-def parse_requirements(md_file):
-    with io.open(md_file, 'r', encoding='utf-8') as file:
+def parse_requirements(md_path: Path) -> Iterator[ Union[ Tuple[VendoredLibrary, None], Tuple[None, LineParseError] ] ]:
+    """Yields `(VendoredLibrary, None)` or `(None, LineParseError)`."""
+    with md_path.open('r', encoding='utf-8') as file:
         lines = file.readlines()
 
     for line_no, line in enumerate(lines[3:], 3):
@@ -121,32 +121,24 @@ def parse_requirements(md_file):
             module = package + first_item
         modules = [module or package] + extra_modules
 
-        result = OrderedDict()
-        result['folder'] = folder
-        result['package'] = package
-        result['version'] = version
-        result['modules'] = modules
-        result['git'] = bool(git)
-        result['url'] = url
-        result['usage'] = usage
-        result['notes'] = notes
+        result = VendoredLibrary(
+            folder=folder,
+            package=package,
+            version=version,
+            modules=modules,
+            git=bool(git),
+            url=url,
+            usage=usage,
+            notes=notes,
+        )
 
         yield result, None
 
 
 def test(file):
-    for req, error in parse_requirements(file):
+    file_path = Path(file)
+    for req, error in parse_requirements(file_path):
         if error:
             raise error
 
-        print(f'Parsed package: {req["package"]}')
-
-
-if __name__ == '__main__':
-    import argparse
-    parser = argparse.ArgumentParser(description='Test parsing `ext/readme.md` or `lib/readme.md`')
-    parser.add_argument('file', help='The list file to test.')
-
-    args = parser.parse_args()
-
-    test(args.file)
+        print(f'Parsed package: {req.package}')
