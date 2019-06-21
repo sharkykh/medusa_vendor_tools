@@ -41,7 +41,7 @@ MIN_PYTHON_3 = '3.5.2'
 GITHUB_URL_PATTERN: Pattern = re.compile(r'github.com/(?P<slug>.+?/.+?)/.+/(?P<commit>[a-f0-9]{40})', re.IGNORECASE)
 
 
-def main(listfile: str, package: str, py2: bool, py3: bool) -> None:
+def vendor(listfile: str, package: str, py2: bool, py3: bool) -> None:
     listpath = Path(listfile).resolve()
     root = listpath.parent.parent
 
@@ -92,7 +92,7 @@ def main(listfile: str, package: str, py2: bool, py3: bool) -> None:
     installed = None
     dependencies = None
     for folder in install_folders:
-        installed, dependencies = vendor(root / folder, package, parsed_package, py2=folder.endswith('2'))
+        installed, dependencies = install(root / folder, package, parsed_package, py2=folder.endswith('2'))
 
         print(f'Installed: {installed.package}=={installed.version} to {folder}')
 
@@ -268,7 +268,7 @@ def remove_all(paths: List[Path]) -> None:
             path.unlink()
 
 
-def vendor(vendor_dir: Path, package: str, parsed_package: Requirement, py2: bool = False) -> (VendoredLibrary, List[Requirement]):
+def install(vendor_dir: Path, package: str, parsed_package: Requirement, py2: bool = False) -> (VendoredLibrary, List[Requirement]):
     """Install `package` into `vendor_dir` using pip, and return a vendored package object and a list of dependencies."""
     print(f'Installing vendored library `{parsed_package.name}` to `{vendor_dir.name}`')
 

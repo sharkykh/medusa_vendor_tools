@@ -73,7 +73,7 @@ def main(args=None):
     args = parser.parse_args(args)
 
     if args.command == 'vendor':
-        from .vendor import main as vendor
+        from .vendor import vendor
         vendor(
             listfile=args.listfile,
             package=args.package,
