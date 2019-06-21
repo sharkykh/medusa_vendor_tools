@@ -39,7 +39,7 @@ class VendoredLibrary:
                 git_url = self.GIT_REPLACE_PATTERN.sub('/tar.gz/', self.url)
                 git_url = git_url.replace('https://github.com/', 'https://codeload.github.com/')
             else:
-                git_url = 'git+' + GIT_REPLACE_PATTERN.sub('.git@', self.url)
+                git_url = 'git+' + self.GIT_REPLACE_PATTERN.sub('.git@', self.url)
             return f'{git_url}#egg={self.package}{self.markers}'
         else:
             return f'{self.package}=={self.version}{self.markers}'
