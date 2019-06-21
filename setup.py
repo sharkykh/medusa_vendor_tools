@@ -30,7 +30,7 @@ setup(
     ],
     packages=['mvt'],
     include_package_data=False,
-    python_requires='>=3.6.0',
+    python_requires='>=3.7.0',
     install_requires=[
         'setuptools',
     ],
