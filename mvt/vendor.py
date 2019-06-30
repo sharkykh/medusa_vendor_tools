@@ -459,7 +459,7 @@ def get_version_and_url(package: str, installed_pkg: AnyDistribution) -> (str, s
             url = url.format(slug='unknown/unknown', commit=version)
         else:
             groups: Mapping[str, str] = match.groupdict()
-            url = url.format(**groups)
+            url = url.format_map(groups)
             version = groups['commit']
     else:
         is_git = False
