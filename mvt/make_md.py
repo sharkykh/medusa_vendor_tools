@@ -28,9 +28,9 @@ def make_list_item(req: VendoredLibrary, packages_pattern: Pattern[AnyStr]):
 
     # Package
     package = f'`{req.package}`'
-    mod_file_in_pkg = req.modules[0].endswith('.py') and req.modules[0][:-3] == req.package
+    mod_file_in_pkg = req.is_main_module_file and req.main_module[:-3] == req.package
     if mod_file_in_pkg:
-        package = f'<code><b>{req.modules[0][:-3]}</b>.py</code>'
+        package = f'<code><b>{req.main_module[:-3]}</b>.py</code>'
     if req.modules[1:]:
         if not mod_file_in_pkg:
             package = f'**{package}**'
@@ -71,10 +71,10 @@ def make_list_item(req: VendoredLibrary, packages_pattern: Pattern[AnyStr]):
     # Notes
     notes = []
     if not mod_file_in_pkg:
-        if req.modules[0].endswith('.py') and req.modules[0][:-3] != req.package:
-            notes.append(f'File: `{req.modules[0]}`')
-        elif req.modules[0] != req.package:
-            notes.append(f'Module: `{req.modules[0]}`')
+        if req.is_main_module_file and req.main_module[:-3] != req.package:
+            notes.append(f'File: `{req.main_module}`')
+        elif req.main_module != req.package:
+            notes.append(f'Module: `{req.main_module}`')
 
     if req.notes:
         notes.extend(packages_pattern.sub(r'\1`\2`\3', note) for note in req.notes)

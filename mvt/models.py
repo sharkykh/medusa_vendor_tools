@@ -57,6 +57,15 @@ class VendoredLibrary:
         return markers
 
     @property
+    def main_module(self):
+        return self.modules[0]
+
+    @property
+    def is_main_module_file(self):
+        """Is the main module a file? (*.py)"""
+        return self.main_module.endswith('.py')
+
+    @property
     def used_by_medusa(self):
         return self.used_by('medusa')
 
