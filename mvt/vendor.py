@@ -41,6 +41,7 @@ MIN_PYTHON_3 = '3.5.2'
 GITHUB_URL_PATTERN: Pattern = re.compile(r'github.com/(?P<slug>.+?/.+?)/.+/(?P<commit>[a-f0-9]{40})', re.IGNORECASE)
 
 
+# Main method
 def vendor(listfile: str, package: str, py2: bool, py3: bool) -> None:
     listpath = Path(listfile).resolve()
     root = listpath.parent.parent
@@ -396,7 +397,7 @@ def get_modules(vendor_dir: Path, installed_pkg: AnyDistribution, parsed_package
         #   1. Top level package matches package name
         #      Example: six[.py]
         #   2. Top level package matches package name, only when it's lowercase
-        #      Example: PackageName[.py] (it's rare?)
+        #      Example: name: PackageName, file: packagename.py (it's rare?)
 
         if name in (real_name, lower_name) or cur_path.is_file() and name[:-3] in (real_name, lower_name):
             top_level.insert(0, name)
