@@ -67,11 +67,19 @@ def vendor(listfile: str, package: str, py2: bool, py3: bool) -> None:
         req = requirements[req_idx]
 
         # Remove old folder(s)/file(s) first using info from `ext/readme.md`
-        package_modules: List[Path] = [
-            (root / folder / module)
-            for module in req.modules
-            for folder in req.folder
-        ]
+        package_modules: List[Path] = []
+        for folder in req.folder:
+            target_path: Path = root / folder
+            for module in req.modules:
+                module_path: Path = (target_path / module).resolve()
+                # Make sure we're not removing anything outside the target folder!
+                if target_path not in module_path.parents:
+                    raise Exception(
+                        'Stopping before removal of files outside target folder!'
+                        f' - {module_path} is not within {target_path}'
+                    )
+                package_modules.append(module_path)
+
         modules_csv = ', '.join(map(str, package_modules))
         print(f'Removing: [{modules_csv}]')
         try:
