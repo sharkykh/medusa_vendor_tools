@@ -143,7 +143,7 @@ def parse_input(package: str) -> Requirement:
         egg_value = re.search(r'#egg=(.+)(?:&|$)', package)
         package = f'{egg_value.group(1)}@{package}'
         return Requirement(package)
-    except (InvalidRequirement, TypeError):  # TypeError: NoneType when not matched
+    except (InvalidRequirement, AttributeError):  # AttributeError: 'NoneType' object has no attribute 'group'
         pass
 
     raise ValueError(f'Unable to parse {package}')
