@@ -30,7 +30,7 @@ def make_list_item(req: VendoredLibrary, packages_pattern: Pattern[AnyStr]):
     package = f'`{req.package}`'
     mod_file_in_pkg = req.is_main_module_file and req.main_module[:-3] == req.package
     if mod_file_in_pkg:
-        package = f'<code><b>{req.main_module[:-3]}</b>.py</code>'
+        package = f'<code><b>{req.package}</b>.py</code>'
     if req.modules[1:]:
         if not mod_file_in_pkg:
             package = f'**{package}**'
@@ -94,8 +94,8 @@ def make_md(requirements: List[VendoredLibrary]):
 
     # Header
     data.append(f'## {folder}\n')
-    data.append(' Folder  |  Package  |  Version / Commit  | Usage | Notes\n')
-    data.append(':------: | :-------: | :----------------: | :---- | :----\n')
+    data.append('Folder | Package | Version / Commit | Usage | Notes\n')
+    data.append(':----: | :-----: | :--------------: | :---- | :----\n')
 
     # Items
     data += [
@@ -105,10 +105,10 @@ def make_md(requirements: List[VendoredLibrary]):
 
     # Footer
     data.append('\n')
-    data.append('Notes:\n')
-    data.append(f' - `{folder}` compatible with python2 and python3\n')
-    data.append(f' - `{folder}2` only compatible with python2\n')
-    data.append(f' - `{folder}3` only compatible with python3\n')
+    data.append('#### Notes:\n')
+    data.append(f'- `{folder}` compatible with Python 2 and Python 3\n')
+    data.append(f'- `{folder}2` only compatible with Python 2\n')
+    data.append(f'- `{folder}3` only compatible with Python 3\n')
 
     return data
 
