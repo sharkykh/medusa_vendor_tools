@@ -4,7 +4,7 @@ from . import __version__
 DEFAULT_EXT_README = 'ext/readme.md'
 DEFAULT_LIB_README = 'lib/readme.md'
 DEFAULT_REQUIREMENTS_TXT = 'requirements.txt'
-DEFAULT_REQUIREMENTS_JSON = DEFAULT_REQUIREMENTS_TXT[:-3] + 'json'
+DEFAULT_REQUIREMENTS_JSON = DEFAULT_REQUIREMENTS_TXT[:-4] + '.json'
 
 
 def main(args=None):
@@ -17,8 +17,8 @@ def main(args=None):
     vendor_help = 'Vendor (or update existing) libraries.'
     vendor_parser = subparsers.add_parser('vendor', help=vendor_help, description=vendor_help)
     vendor_parser.add_argument('package', help='Package to vendor')
-    vendor_parser.add_argument('-2', '--py2', action='store_true', help='Install Python 2 version to ext2')
-    vendor_parser.add_argument('-3', '--py3', action='store_true', help='Install Python 3 version to ext3')
+    vendor_parser.add_argument('-2', '--py2', action='store_true', help='Install Python 2 version to [target]2')
+    vendor_parser.add_argument('-3', '--py3', action='store_true', help='Install Python 3 version to [target]3')
     vendor_parser.add_argument(
         '-f', '--listfile', default=DEFAULT_EXT_README,
         help=f'List file to update (affects target folders). Defaults to `{DEFAULT_EXT_README}`'

@@ -51,8 +51,8 @@ positional arguments:
 
 optional arguments:
   -h, --help            show this help message and exit
-  -2, --py2             Install Python 2 version to ext2
-  -3, --py3             Install Python 3 version to ext3
+  -2, --py2             Install Python 2 version to [target]2
+  -3, --py3             Install Python 3 version to [target]3
   -f LISTFILE, --listfile LISTFILE
                         List file to update (affects target folders). Defaults
                         to `ext/readme.md`
