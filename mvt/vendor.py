@@ -210,8 +210,8 @@ def run_dependency_checks(installed: VendoredLibrary, dependencies: List[Require
     installed_pkg_name: str = installed.package
     installed_pkg_lower = installed_pkg_name.lower()
 
-    deps_psv = ' | '.join(map(str, dependencies)) or 'no dependencies'
-    print(f'Package {installed_pkg_name} depends on: {deps_psv}\n')
+    deps_fmt = '\n  '.join(map(str, dependencies)) or 'no dependencies'
+    print(f'Package {installed_pkg_name} depends on:\n  {deps_fmt}\n')
 
     # Check if a dependency of a previous version is not needed now and remove it
     dep_names: List[str] = [d.name.lower() for d in dependencies]
