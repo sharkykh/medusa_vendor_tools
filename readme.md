@@ -10,7 +10,7 @@ Tools for dealing with the vendored libraries and requirement lists in [**pymedu
 - They are targeted towards Windows.
 
 ## Requirements
-- Python 3.6 or later
+- Python 3.7 or later
 ##### Additionally, for the vendor command:
 - [Python Launcher (`py`)](https://docs.python.org/3/using/windows.html#launcher) installed and in PATH
 - Latest Python 2.7 installed and executable using `py -2.7`
