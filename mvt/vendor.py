@@ -362,8 +362,10 @@ def get_modules(vendor_dir: Path, installed_pkg: AnyDistribution, parsed_package
     """Get a list of all the top-level modules/files names, with the "main" module being the first."""
     using: str = None
     checklist: List[str] = [
-        'top_level.txt',
+        # Use RECORD first because it's more reliable
+        # (Extensions are picked up by `top_level.txt` - see `PyYAML`)
         'RECORD',
+        'top_level.txt',
     ]
     while using is None and checklist:
         checkpath: str = checklist.pop(0)
@@ -392,6 +394,9 @@ def get_modules(vendor_dir: Path, installed_pkg: AnyDistribution, parsed_package
             # Get the left-most name (directory or file) of the left-most item
             name = ln.split(',', 1)[0].split('/', 1)[0]
             if name.endswith(('.dist-info', '.egg-info')):
+                continue
+            # ../../bin/subliminal.exe,sha256=_00-qFoXoJiPYvmGWSVsK5WspavdE6umXt82G980GiA,102763
+            if name == '..':
                 continue
             parsed_top_level.append(name)
 
