@@ -293,11 +293,14 @@ def install(
     """Install `package` into `vendor_dir` using pip, and return a vendored package object and a list of dependencies."""
     print(f'Installing vendored library `{parsed_package.name}` to `{vendor_dir.name}`')
 
-    # Use "Python Launcher for Windows" (available since Python 3.3)
-    executable = 'py'
-    args: List[str] = [
-        executable,
-        '-3' if not py2 else '-2.7',
+    if py2:
+        # Use "Python Launcher for Windows" (available since Python 3.3)
+        executable = ['py', '-2.7']
+    else:
+        # Use currently running Python version (3.7+)
+        executable = [sys.executable]
+
+    args: List[str] = executable + [
         '-m', 'pip', 'install', '--no-compile', '--no-deps', '--upgrade',
     ]
     if py2:
