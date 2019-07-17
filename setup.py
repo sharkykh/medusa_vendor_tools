@@ -25,18 +25,18 @@ setup(
         'Intended Audience :: Developers',
         'Operating System :: Microsoft :: Windows',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
     ],
     packages=['mvt'],
     include_package_data=False,
     python_requires='>=3.7.0',
     install_requires=[
-        'setuptools',
+        'pip >=19.1.1',
+        'setuptools >=41.0.0',
     ],
     entry_points={
         'console_scripts': [
-            'mvt=mvt.__main__:main',
+            'mvt = mvt.__main__:main',
         ],
     },
 )
