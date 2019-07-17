@@ -40,7 +40,7 @@ class VendoredLibrary:
                 git_url = git_url.replace('https://github.com/', 'https://codeload.github.com/')
             else:
                 git_url = 'git+' + self.GIT_REPLACE_PATTERN.sub('.git@', self.url)
-            return f'{git_url}#egg={self.package}{self.markers}'
+            return f'{self.package} @ {git_url}#egg={self.package}{self.markers}'
         else:
             return f'{self.package}=={self.version}{self.markers}'
 
@@ -52,7 +52,7 @@ class VendoredLibrary:
         lib = ('lib2' in self.folder) != ('lib3' in self.folder)
         if len(self.folder) == 1 and (ext or lib):
             major_v = self.folder[0][-1]
-            markers = " ; python_version == '%s.*'" % major_v
+            markers = f" ; python_version == '{major_v}.*'"
 
         return markers
 
