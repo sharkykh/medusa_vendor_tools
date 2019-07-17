@@ -10,7 +10,6 @@ from textwrap import dedent
 from typing import (
     List,
     Mapping,
-    Match,
     Optional,
     Pattern,
     Union,
@@ -19,7 +18,6 @@ from typing import (
 import pkg_resources
 from pkg_resources._vendor.packaging.requirements import InvalidRequirement, Requirement
 from pkg_resources._vendor.packaging.markers import Marker
-# from pkg_resources._vendor.packaging.version import parse as parse_version
 
 from . import parse as parse_md
 from .gen_req import generate_requirements
@@ -66,7 +64,10 @@ def vendor(listfile: str, package: str, py2: bool, py3: bool) -> None:
 
     if req_idx is not None:
         req = requirements[req_idx]
+    else:
+        req = None
 
+    if req:
         # Remove old folder(s)/file(s) first using info from `[target]/readme.md`
         package_modules: List[Path] = []
         for folder in req.folder:
@@ -101,13 +102,18 @@ def vendor(listfile: str, package: str, py2: bool, py3: bool) -> None:
     installed = None
     dependencies = None
     for folder in install_folders:
-        installed, dependencies = install(root / folder, package, parsed_package, py2=folder.endswith('2'))
+        installed, dependencies = install(
+            vendor_dir=root / folder,
+            package=package,
+            parsed_package=parsed_package,
+            py2=folder.endswith('2'),
+        )
 
         print(f'Installed: {installed.package}=={installed.version} to {folder}')
 
     installed.folder = install_folders
 
-    if req_idx is not None:
+    if req:
         installed.usage = req.usage
         installed.notes += req.notes
     else:
@@ -152,7 +158,8 @@ def parse_input(package: str) -> Requirement:
         egg_value = re.search(r'#egg=(.+)(?:&|$)', package)
         package = f'{egg_value.group(1)}@{package}'
         return Requirement(package)
-    except (InvalidRequirement, AttributeError):  # AttributeError: 'NoneType' object has no attribute 'group'
+    except (InvalidRequirement, AttributeError):
+        # AttributeError: 'NoneType' object has no attribute 'group'
         pass
 
     raise ValueError(f'Unable to parse {package}')
@@ -249,7 +256,7 @@ def run_dependency_checks(installed: VendoredLibrary, dependencies: List[Require
 
         dep_req = requirements[dep_req_idx]
         dep_req_name = dep_req.package
-        dep_req_ver = dep_req.version  # parse_version(dep_req.version)
+        dep_req_ver = dep_req.version
         if dep_req_ver not in dep.specifier:
             if dep_req.git:
                 print(f'May need to update {dep_req_name} (git dependency) to match specifier: {dep.specifier}')
@@ -277,20 +284,25 @@ def remove_all(paths: List[Path]) -> None:
             path.unlink()
 
 
-def install(vendor_dir: Path, package: str, parsed_package: Requirement, py2: bool = False) -> (VendoredLibrary, List[Requirement]):
+def install(
+    vendor_dir: Path,
+    package: str,
+    parsed_package: Requirement,
+    py2: bool = False
+) -> (VendoredLibrary, List[Requirement]):
     """Install `package` into `vendor_dir` using pip, and return a vendored package object and a list of dependencies."""
     print(f'Installing vendored library `{parsed_package.name}` to `{vendor_dir.name}`')
 
-    # We use `--no-deps` because we want to ensure that all of our dependencies are added to the list.
-    # This includes all dependencies recursively up the chain.
-    executable = 'py'  # Use the Windows launcher
+    # Use "Python Launcher for Windows" (available since Python 3.3)
+    executable = 'py'
     args: List[str] = [
         executable,
         '-3' if not py2 else '-2.7',
         '-m', 'pip', 'install', '--no-compile', '--no-deps', '--upgrade',
     ]
     if py2:
-        # Some versions of pip for Python 2.7 on Windows have an issue where the progress bar can fail the install
+        # Some versions of Pip for Python 2.7 on Windows can sometimes fail when the progress bar is enabled
+        # See: https://github.com/pypa/pip/issues/5665
         args += ['--progress-bar', 'off']
     args += ['--target', str(vendor_dir), package]
 
@@ -301,7 +313,7 @@ def install(vendor_dir: Path, package: str, parsed_package: Requirement, py2: bo
     print(f'----- [ pip | py{major_version} ] -----')
 
     if pip_result != 0:
-        raise Exception('Pip failed')
+        raise InstallFailed('Pip failed')
 
     # Drop the bin directory (contains easy_install, distro, chardetect etc.)
     # Might not appear on all OSes, so ignoring errors
@@ -337,6 +349,10 @@ def install(vendor_dir: Path, package: str, parsed_package: Requirement, py2: bo
     drop_dir(Path(installed_pkg.egg_info))
 
     return result, dependencies
+
+
+class InstallFailed(Exception):
+    pass
 
 
 def get_modules(vendor_dir: Path, installed_pkg: AnyDistribution, parsed_package: Requirement) -> List[str]:
@@ -447,11 +463,14 @@ def get_dependencies(installed_pkg: AnyDistribution, parsed_package: Requirement
     return deps
 
 
-def get_version_and_url(package: str, installed_pkg: AnyDistribution) -> (str, str, bool):
+def get_version_and_url(
+    package: str,
+    installed_pkg: AnyDistribution,
+) -> (str, str, bool):
     """Get the installed package's version and url, and whether or not it's a git dependency."""
     if 'github.com' in package:
         is_git = True
-        match: re.Match = GITHUB_URL_PATTERN.search(package)
+        match = GITHUB_URL_PATTERN.search(package)
         url = 'https://github.com/{slug}/tree/{commit}'
         if not match:
             print(dedent("""
