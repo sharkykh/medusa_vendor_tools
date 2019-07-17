@@ -50,7 +50,7 @@ def vendor(listfile: str, package: str, py2: bool, py3: bool) -> None:
     parsed_package = parse_input(package)
     package_name: str = parsed_package.name
 
-    print(f'Starting vendor script for: {package_name}{parsed_package.specifier!s}')
+    print(f'Starting vendor script for: {package_name}{parsed_package.specifier}')
     if parsed_package.extras:
         csv_extras = ','.join(parsed_package.extras)
         print('=' * 60)
@@ -67,7 +67,7 @@ def vendor(listfile: str, package: str, py2: bool, py3: bool) -> None:
     if req_idx is not None:
         req = requirements[req_idx]
 
-        # Remove old folder(s)/file(s) first using info from `ext/readme.md`
+        # Remove old folder(s)/file(s) first using info from `[target]/readme.md`
         package_modules: List[Path] = []
         for folder in req.folder:
             target_path: Path = root / folder
