@@ -18,14 +18,17 @@ Tools for dealing with the vendored libraries and requirement lists in [**pymedu
 - [`setuptools`](https://pypi.org/project/setuptools) library installed
 
 ## Installation
-```shell
-pip install https://github.com/sharkykh/medusa_vendor_tools/archive/master.tar.gz
-```
-or by cloning this repository:
+**Recommended:** Clone this repository and install in "editable" mode:
 ```shell
 git clone https://github.com/sharkykh/medusa_vendor_tools
 cd medusa_vendor_tools
-pip install .
+pip install -e .
+```
+Then update using `git pull` in the repository directory.
+
+**Or:** Install from archive:
+```shell
+pip install https://github.com/sharkykh/medusa_vendor_tools/archive/master.tar.gz
 ```
 
 ## Usage
