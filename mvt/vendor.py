@@ -6,6 +6,7 @@ import shutil
 import subprocess
 import sys
 from pathlib import Path
+from tarfile import TarFile
 from textwrap import dedent
 from typing import (
     List,
@@ -21,6 +22,7 @@ from pkg_resources._vendor.packaging.markers import Marker
 
 from . import parse as parse_md
 from .gen_req import generate_requirements
+from .get_setup_kwargs import get_setup_kwargs
 from .make_md import make_md
 from .models import VendoredLibrary
 
@@ -33,10 +35,9 @@ AnyDistribution = Union[
 
 MIN_PYTHON_2 = '2.7.10'
 MIN_PYTHON_3 = '3.5.2'
-# https://github.com/:owner/:repo/archive/eea9ac18e38c930230cf81b5dca4a9af9fb10d4e.tar.gz#egg=name
-# https://codeload.github.com/:owner/:repo/tar.gz/eea9ac18e38c930230cf81b5dca4a9af9fb10d4e#egg=name
-# Not perfect, but close enough? Can't handle branches ATM anyway
-GITHUB_URL_PATTERN: Pattern = re.compile(r'github.com/(?P<slug>.+?/.+?)/.+/(?P<commit>[a-f0-9]{40})', re.IGNORECASE)
+# https://github.com/:owner/:repo/archive/:commit-ish.tar.gz#egg=name
+# https://codeload.github.com/:owner/:repo/tar.gz/:commit-ish#egg=name
+GITHUB_URL_PATTERN: Pattern = re.compile(r'github.com/(?P<slug>.+?/.+?)/', re.IGNORECASE)
 
 
 # Main method
@@ -94,17 +95,34 @@ def vendor(listfile: str, package: str, py2: bool, py3: bool) -> None:
             install_folders = req.folder
         else:
             print(f'Installing {package_name} to targets according to CLI switches')
-            install_folders = make_list_of_folders(target, py2, py3)
+            install_folders = None
     else:
         print(f'Package {package_name} not found in list, assuming new package')
-        install_folders = make_list_of_folders(target, py2, py3)
+        install_folders = None
+
+    # Download source code (removed later)
+    download_target: Path = root / '.mvt-temp'
+
+    try:
+        source_archive = download_source(parsed_package, download_target)
+        extracted_source, source_commit_hash = extract_source(source_archive)
+        setup_py_results = check_setup_py(extracted_source, py2=py2, py3=py3)
+    except InstallFailed as error:
+        drop_dir(download_target)
+        print(f'Error: {error!r}')
+        return
+
+    if not install_folders:
+        install_folders = make_list_of_folders(target, **setup_py_results['versions'])
+
+    dependencies = setup_py_results['dependencies']
 
     installed = None
-    dependencies = None
     for folder in install_folders:
-        installed, dependencies = install(
+        installed = install(
             vendor_dir=root / folder,
-            package=package,
+            source_dir=extracted_source,
+            source_commit_hash=source_commit_hash,
             parsed_package=parsed_package,
             py2=folder.endswith('2'),
         )
@@ -112,6 +130,9 @@ def vendor(listfile: str, package: str, py2: bool, py3: bool) -> None:
         print(f'Installed: {installed.package}=={installed.version} to {folder}')
 
     installed.folder = install_folders
+
+    # Remove downloaded source after installation
+    drop_dir(download_target)
 
     if req:
         installed.usage = req.usage
@@ -188,6 +209,164 @@ def load_requirements(listpath: Path, package_name: str) -> (List[VendoredLibrar
     return requirements, req_idx
 
 
+def download_source(parsed_package: Requirement, download_target: Path) -> Path:
+    remove_all(download_target.glob('**/*'))
+    if not download_target.is_dir():
+        download_target.mkdir()
+
+    (download_target / '.gitignore').write_text('*', encoding='utf-8')
+
+    print(f'Downloading source for {parsed_package.name}')
+
+    args: List[str] = [
+        sys.executable,
+        '-m', 'pip', 'download', '--no-binary', ':all:', '--no-deps',
+        '--dest', str(download_target), str(parsed_package),
+    ]
+
+    print('+++++ [ pip download ] +++++')
+    pip_result = subprocess.call(args)
+    print('----- [ pip download ] -----')
+
+    if pip_result != 0:
+        raise SourceDownloadFailed('Pip failed')
+
+    return next(
+        f for f in download_target.glob('*')
+        if f.name != '.gitignore'
+    )
+
+
+class SourceDownloadFailed(Exception):
+    pass
+
+
+def extract_source(source_path: Path) -> (Path, Optional[str]):
+    """Extract the source archive, return the extracted path and optionally the commit hash stored inside."""
+    folder_name = source_path.name.replace('.tar.gz', '')
+    extracted_path = source_path.with_name(folder_name)
+
+    commit_hash = None
+    with TarFile.open(str(source_path), 'r:gz') as tar:
+        # Commit hash (if downloaded from GitHub)
+        commit_hash = tar.pax_headers.get('comment')
+        # Update extracted path because:
+        # `<commit-hash>[.tar.gz]` extracts a folder named `repo-name-<commit-hash>`
+        # `<branch-name>[.tar.gz]` extracts a folder named `repo-name-<branch-name>`
+        root_files = [name for name in tar.getnames() if '/' not in name]
+        if len(root_files) == 1:
+            extracted_path = source_path.with_name(root_files[0])
+
+        tar.extractall(str(extracted_path.parent))
+
+    return extracted_path, commit_hash
+
+
+# `extras_require` can be complex...
+def compile_extras_require(data: Optional[Mapping[str, List[str]]]) -> List[str]:
+    extras = []
+    if not data:
+        return extras
+
+    for extra_key, packages in data.items():
+        # Convert `extras_require` format to a list of requirement strings
+        # {"socks:python_version == '2.7'": [...]}
+        # {":python_version == '2.7'": [...]}
+        # {'': [...]}
+        extra, markers = extra_key.split(':') if ':' in extra_key else [extra_key, '']
+
+        for package in packages:
+            req = Requirement(package)
+            old_marker = str(req.marker) if req.marker else ''
+
+            new_markers = []
+            if markers:
+                new_markers.append(f'({markers})')
+            if extra:
+                new_markers.append(f"extra == '{extra}'")
+            if old_marker:
+                new_markers.insert(0, f'({old_marker})')
+
+            req.marker = Marker(' and '.join(new_markers))
+
+        extras.append(str(req))
+
+    return extras
+
+
+def check_setup_py(package_path: Path, py2: bool, py3: bool) -> dict:
+    process_all = not py2 and not py3
+    process_py3 = py3 or process_all
+    process_py2 = py2 or process_all
+    process_any = process_py3 and process_py2
+
+    # Check with Python 3
+    if process_py3:
+        kwargs_py3 = get_setup_kwargs(setup_path=package_path, python_version=MIN_PYTHON_3)
+    else:
+        kwargs_py3 = {}
+
+    # Check with Python 2 (may try to spawn Python a Python 2 executable)
+    if process_py2:
+        kwargs_py2 = get_setup_kwargs(setup_path=package_path, python_version=MIN_PYTHON_2)
+    else:
+        kwargs_py2 = {}
+
+    # Merge unique dependencies, update missing markers for python versions
+    deps_py2 = kwargs_py2.get('install_requires', [])
+    deps_py3 = kwargs_py3.get('install_requires', [])
+
+    deps_py2 += compile_extras_require(kwargs_py2.get('extras_require', {}))
+    deps_py3 += compile_extras_require(kwargs_py3.get('extras_require', {}))
+
+    dependencies = filter_unique_dependencies(deps_py2, deps_py3)
+
+    result = {
+        'versions': {'py3': py3, 'py2': py2},
+        'dependencies': dependencies
+    }
+
+    separate_versions = any([
+        kwargs_py3.get('use_2to3', False),
+        kwargs_py3.get('package_dir') != kwargs_py2.get('package_dir'),
+    ])
+    if separate_versions and not all(result['versions'].values()):
+        result['versions'] = {'py3': True, 'py2': True}
+
+    return result
+
+
+def filter_unique_dependencies(deps_py2: List[str], deps_py3: List[str]) -> List[Requirement]:
+    parsed_deps = {
+        2: list(map(Requirement, deps_py2)),
+        3: list(map(Requirement, deps_py3)),
+    }
+
+    dependencies = []
+    deps_seen = set()
+    deps_unique = set(map(str, parsed_deps[2])).difference(map(str, parsed_deps[3]))
+
+    for version, deps in parsed_deps.items():
+        for dep in deps:
+            dep_as_str = str(dep)
+
+            # Mark seen dependencies to filter out the duplicates
+            if dep_as_str in deps_seen:
+                continue
+            deps_seen.add(dep_as_str)
+
+            if dep_as_str in deps_unique:
+                # If marker has the "python_version" key, we don't need to change anything
+                if dep.marker and 'python_version' not in str(dep.marker):
+                    # Unique to one of the Python versions, update markers
+                    old_marker = f'({dep.marker}) and ' if dep.marker else ''
+                    dep.marker = Marker(old_marker + f"python_version == '{version}.*'")
+
+            dependencies.append(dep)
+
+    return dependencies
+
+
 def make_list_of_folders(target: str, py2: bool, py3: bool) -> List[str]:
     """Generate a list of target folders based on targeted Python versions."""
     install_folders: List[str] = []
@@ -230,11 +409,9 @@ def run_dependency_checks(installed: VendoredLibrary, dependencies: List[Require
         usage_lower = list(map(str.lower, req.usage))
 
         if installed_pkg_lower in usage_lower and req_name.lower() not in dep_names:
-            # Disabled automation, as some packages use logic in `setup.py` rather than markers :(
-            # idx = usage_lower.index(installed_pkg_lower)
-            # req.usage.pop(idx)
-            # print(f'Removed `{installed_pkg_name}` usage from dependency `{req_name}`')
-            print(f"Consider removing `{installed_pkg_name}` usage from dependency `{req_name}` (verify that it's not used)")
+            idx = usage_lower.index(installed_pkg_lower)
+            req.usage.pop(idx)
+            print(f'Removed `{installed_pkg_name}` usage from dependency `{req_name}`')
 
     # Check that the dependencies are installed (partial),
     #   and that their versions match the new specifier (also partial)
@@ -286,11 +463,12 @@ def remove_all(paths: List[Path]) -> None:
 
 def install(
     vendor_dir: Path,
-    package: str,
+    source_dir: Path,
+    source_commit_hash: Optional[str],
     parsed_package: Requirement,
     py2: bool = False
-) -> (VendoredLibrary, List[Requirement]):
-    """Install `package` into `vendor_dir` using pip, and return a vendored package object and a list of dependencies."""
+) -> VendoredLibrary:
+    """Install package from `source_dir` into `vendor_dir` using pip, and return a vendored package object and a list of dependencies."""
     print(f'Installing vendored library `{parsed_package.name}` to `{vendor_dir.name}`')
 
     if py2:
@@ -307,7 +485,7 @@ def install(
         # Some versions of Pip for Python 2.7 on Windows can sometimes fail when the progress bar is enabled
         # See: https://github.com/pypa/pip/issues/5665
         args += ['--progress-bar', 'off']
-    args += ['--target', str(vendor_dir), package]
+    args += ['--target', str(vendor_dir), str(source_dir)]
 
     major_version = 2 if py2 else 3
 
@@ -333,11 +511,8 @@ def install(
     # Modules
     modules = get_modules(vendor_dir, installed_pkg, parsed_package)
 
-    # Dependencies
-    dependencies = get_dependencies(installed_pkg, parsed_package)
-
     # Update version and url
-    version, url, is_git = get_version_and_url(package, installed_pkg)
+    version, url, is_git = get_version_and_url(installed_pkg, parsed_package, source_commit_hash)
 
     result = VendoredLibrary(
         folder=[vendor_dir.name],
@@ -351,7 +526,11 @@ def install(
     # Remove the package info folder
     drop_dir(Path(installed_pkg.egg_info))
 
-    return result, dependencies
+    return result
+
+
+class InstallFailed(Exception):
+    pass
 
 
 class InstallFailed(Exception):
@@ -431,74 +610,36 @@ def get_modules(vendor_dir: Path, installed_pkg: AnyDistribution, parsed_package
     return top_level
 
 
-def get_dependencies(installed_pkg: AnyDistribution, parsed_package: Requirement) -> List[Requirement]:
-    """Get a list of all the installed package dependencies."""
-    raw_metadata = installed_pkg.get_metadata(installed_pkg.PKG_INFO)
-    metadata = email.parser.Parser().parsestr(raw_metadata)
-
-    if isinstance(installed_pkg, pkg_resources.EggInfoDistribution):
-        requires = []
-        for extra, reqs in installed_pkg._dep_map.items():
-            if extra is None:
-                requires.extend(reqs)
-            else:
-                for req in reqs:
-                    old_marker = ''
-                    if req.marker:
-                        old_marker = f'({req.marker}) and '
-                    req.marker = Marker(old_marker + f"extra == '{extra}'")
-                    requires.append(req)
-    else:
-        requires = metadata.get_all('Requires-Dist') or []
-
-    def eval_extra(marker: Marker, extra: Optional[str], python_version: str) -> bool:
-        return marker.evaluate({'extra': extra, 'python_version': python_version})
-
-    deps: List[Requirement] = []
-    for req in requires:
-        # Requires-Dist: chardet (<3.1.0,>=3.0.2)
-        # Requires-Dist: win-inet-pton; (sys_platform == "win32" and python_version == "2.7") and extra == 'socks'
-        # Requires-Dist: funcsigs; python_version == "2.7"
-        if isinstance(req, str):
-            req = Requirement(req)
-
-        extras = [None] + list(parsed_package.extras)
-        eval_py27 = req.marker and any(eval_extra(req.marker, ex, MIN_PYTHON_2) for ex in extras)
-        eval_py35 = req.marker and any(eval_extra(req.marker, ex, MIN_PYTHON_3) for ex in extras)
-        if not req.marker or eval_py27 or eval_py35:
-            deps.append(req)
-
-    return deps
-
-
 def get_version_and_url(
-    package: str,
     installed_pkg: AnyDistribution,
+    parsed_package: Requirement,
+    source_commit_hash: Optional[str],
 ) -> (str, str, bool):
     """Get the installed package's version and url, and whether or not it's a git dependency."""
-    if 'github.com' in package:
-        is_git = True
-        match = GITHUB_URL_PATTERN.search(package)
-        url = 'https://github.com/{slug}/tree/{commit}'
+    is_git = bool(source_commit_hash)
+    if is_git:
+        match = None
+        if parsed_package.url and 'github.com' in parsed_package.url:
+            match = GITHUB_URL_PATTERN.search(parsed_package.url)
+            url = 'https://github.com/{slug}/tree/{commit}'
+
         if not match:
             print(dedent("""
-            -----------------------------------------------------
+            ---------------------------------------------
                                     ERROR
-            -----------------------------------------------------
-            Failed to parse the URL from repo and commit hash
-            Be sure to include the commit hash in the install URL
-            -----------------------------------------------------
+            ---------------------------------------------
+            Failed to parse the URL.
+            Note that currently only GitHub is supported.
+            ---------------------------------------------
             """))
-            # Put some random data so the script doesn't fail to parse the line
-            from hashlib import sha1
-            version = sha1(b'commit').hexdigest()
-            url = url.format(slug='unknown/unknown', commit=version)
+            slug = 'unknown/unknown'
         else:
             groups: Mapping[str, str] = match.groupdict()
-            url = url.format_map(groups)
-            version = groups['commit']
+            slug = groups['slug']
+
+        url = url.format(slug=slug, commit=source_commit_hash)
+        version = source_commit_hash
     else:
-        is_git = False
         version = installed_pkg.version
         url = f'https://pypi.org/project/{installed_pkg.project_name}/{version}/'
 
