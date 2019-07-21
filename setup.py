@@ -1,4 +1,4 @@
-from setuptools import setup
+from setuptools import find_packages, setup
 
 from mvt import __version__
 
@@ -27,7 +27,7 @@ setup(
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.7',
     ],
-    packages=['mvt'],
+    packages=find_packages(),
     include_package_data=False,
     python_requires='>=3.7.0',
     install_requires=[
