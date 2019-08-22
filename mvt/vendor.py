@@ -420,11 +420,17 @@ def run_dependency_checks(installed: VendoredLibrary, dependencies: List[Require
     index: int
     dep: Requirement
     for dep in dependencies:
+        specifier = str(dep.specifier) or 'any version'
+
+        # Skip `test` and `dev` extras for now
+        if dep.marker and (dep.marker.evaluate({'extra': 'test'}) or dep.marker.evaluate({'extra': 'dev'})):
+            print(f'Skipping extra dependency: `{dep.name}` @ {specifier} with marker: {dep.marker!s}')
+            continue
+
         try:
             dep_req_idx = req_names.index(dep.name.lower())
         except ValueError:
             # raised if dependency was not found
-            specifier = str(dep.specifier) or 'any version'
             text = f'May need to install new dependency `{dep.name}` @ {specifier}'
             if dep.marker:
                 text += f', but only for {dep.marker!s}'
