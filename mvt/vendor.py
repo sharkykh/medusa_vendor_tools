@@ -38,6 +38,7 @@ MIN_PYTHON_3 = '3.5.2'
 # https://github.com/:owner/:repo/archive/:commit-ish.tar.gz#egg=name
 # https://codeload.github.com/:owner/:repo/tar.gz/:commit-ish#egg=name
 GITHUB_URL_PATTERN: Pattern = re.compile(r'github.com/(?P<slug>.+?/.+?)/', re.IGNORECASE)
+EXTRA_SKIP_PATTERN: Pattern = re.compile(r'extra == "(test|dev)"')
 
 
 # Main method
@@ -423,7 +424,7 @@ def run_dependency_checks(installed: VendoredLibrary, dependencies: List[Require
         specifier = str(dep.specifier) or 'any version'
 
         # Skip `test` and `dev` extras for now
-        if dep.marker and (dep.marker.evaluate({'extra': 'test'}) or dep.marker.evaluate({'extra': 'dev'})):
+        if dep.marker and EXTRA_SKIP_PATTERN.search(str(dep.marker)):
             print(f'Skipping extra dependency: `{dep.name}` @ {specifier} with marker: {dep.marker!s}')
             continue
 
