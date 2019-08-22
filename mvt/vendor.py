@@ -38,7 +38,6 @@ MIN_PYTHON_3 = '3.5.2'
 # https://github.com/:owner/:repo/archive/:commit-ish.tar.gz#egg=name
 # https://codeload.github.com/:owner/:repo/tar.gz/:commit-ish#egg=name
 GITHUB_URL_PATTERN: Pattern = re.compile(r'github.com/(?P<slug>.+?/.+?)/', re.IGNORECASE)
-EXTRA_SKIP_PATTERN: Pattern = re.compile(r'extra == "(test|dev)"')
 
 
 # Main method
@@ -276,6 +275,10 @@ def compile_extras_require(data: Optional[Mapping[str, List[str]]]) -> List[str]
         # {'': [...]}
         extra, markers = extra_key.split(':') if ':' in extra_key else [extra_key, '']
 
+        # Skip `test` and `dev` extras
+        if extra in ('dev', 'test'):
+            continue
+
         for package in packages:
             req = Requirement(package)
             old_marker = str(req.marker) if req.marker else ''
@@ -421,17 +424,11 @@ def run_dependency_checks(installed: VendoredLibrary, dependencies: List[Require
     index: int
     dep: Requirement
     for dep in dependencies:
-        specifier = str(dep.specifier) or 'any version'
-
-        # Skip `test` and `dev` extras for now
-        if dep.marker and EXTRA_SKIP_PATTERN.search(str(dep.marker)):
-            print(f'Skipping extra dependency: `{dep.name}` @ {specifier} with marker: {dep.marker!s}')
-            continue
-
         try:
             dep_req_idx = req_names.index(dep.name.lower())
         except ValueError:
             # raised if dependency was not found
+            specifier = str(dep.specifier) or 'any version'
             text = f'May need to install new dependency `{dep.name}` @ {specifier}'
             if dep.marker:
                 text += f', but only for {dep.marker!s}'
