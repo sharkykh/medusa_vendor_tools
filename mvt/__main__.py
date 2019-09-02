@@ -44,6 +44,14 @@ def main(args=None):
         help=f'export as JSON to `{DEFAULT_REQUIREMENTS_JSON}` (or OUTFILE)'
     )
 
+    # Command: outdated
+    outdated_help = 'List outdated packages.'
+    outdated_parser = subparsers.add_parser('outdated', help=outdated_help, description=outdated_help)
+    outdated_parser.add_argument(
+        '-f', '--listfile', default=DEFAULT_EXT_README,
+        help=f'List file to check. Defaults to `{DEFAULT_EXT_README}`'
+    )
+
     # Command: parse
     parse_help = 'Test parsing `ext/readme.md` or `lib/readme.md`.'
     parse_parser = subparsers.add_parser('parse', help=parse_help, description=parse_help)
@@ -92,6 +100,10 @@ def main(args=None):
             all_packages=args.all_packages,
             json_output=args.json,
         )
+
+    if args.command == 'outdated':
+        from .outdated import outdated
+        outdated(args.listfile)
 
     if args.command == 'parse':
         from .parse import test
