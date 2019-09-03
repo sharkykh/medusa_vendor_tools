@@ -79,7 +79,11 @@ optional arguments:
 #### [`mvt outdated`](/mvt/outdated.py)
 List outdated packages.
 ```
-usage: mvt outdated [-h] [-f LISTFILE]
+usage: mvt outdated [-h] [-f LISTFILE] [package [package ...]]
+
+positional arguments:
+  package              Package(s) to check. If not provided, checks all of
+                        the packages.
 
 optional arguments:
   -h, --help            show this help message and exit

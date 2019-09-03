@@ -48,6 +48,10 @@ def main(args=None):
     outdated_help = 'List outdated packages.'
     outdated_parser = subparsers.add_parser('outdated', help=outdated_help, description=outdated_help)
     outdated_parser.add_argument(
+        'packages', nargs='*', metavar='package',
+        help=f'Package(s) to check. If not provided, checks all of the packages.'
+    )
+    outdated_parser.add_argument(
         '-f', '--listfile', default=DEFAULT_EXT_README,
         help=f'List file to check. Defaults to `{DEFAULT_EXT_README}`'
     )
@@ -103,7 +107,10 @@ def main(args=None):
 
     if args.command == 'outdated':
         from .outdated import outdated
-        outdated(args.listfile)
+        outdated(
+            listfile=args.listfile,
+            packages=args.packages,
+        )
 
     if args.command == 'parse':
         from .parse import test

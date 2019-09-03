@@ -26,11 +26,13 @@ session.headers.update({
 })
 
 
-def outdated(listfile: Union[Path, str]) -> None:
+def outdated(listfile: Union[Path, str], packages: List[str]) -> None:
     if not isinstance(listfile, Path):
         listfile = Path(listfile)
 
     root = listfile.parent.parent.resolve()
+
+    packages_lower = [p.lower() for p in packages]
 
     generator = parse.parse_requirements(listfile)
 
@@ -38,6 +40,9 @@ def outdated(listfile: Union[Path, str]) -> None:
     req: Optional[VendoredLibrary]
     error: Optional[parse.LineParseError]
     for req, error in generator:
+        if packages and req.package.lower() not in packages_lower:
+            continue
+
         if error:
             print(str(error), file=sys.stderr)
             continue
