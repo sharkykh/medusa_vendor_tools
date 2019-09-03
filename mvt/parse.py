@@ -14,7 +14,15 @@ from .models import VendoredLibrary
 # Strip code tags to make line pattern simpler, and remove line breaks
 STRIP_PATTERN = re.compile(r'</?code>|`|\n$', re.IGNORECASE)
 PACKAGE_PATTERN = re.compile(r'(?:<b>|\*\*)?([\w.-]+)(?:</b>|\*\*)?(.*)', re.IGNORECASE)
-VERSION_PATTERN = re.compile(r'(?:\w+/)?\[(?:(?P<git>commit|[a-f0-9]+)|(?P<version>[\d.]+))\]\((?P<url>[\w.:/-]+)\)', re.IGNORECASE)
+VERSION_PATTERN = re.compile(
+    r'(?:\w+/)?'
+    r'\[(?:'
+    r'(?:(?P<branch>.+?)@)?(?P<git>commit|[a-f0-9]+)'
+    r'|(?P<version>[\d.]+)'
+    r')\]'
+    r'\((?P<url>[\w.:/-]+)\)',
+    re.IGNORECASE
+)
 URL_COMMIT_PATTERN = re.compile(r'/([a-f0-9]{40})/?', re.IGNORECASE)
 
 
@@ -94,7 +102,7 @@ def parse_requirements(md_path: Path) -> Iterator[ Union[ Tuple[VendoredLibrary,
         if not match:
             yield None, LineParseError(line_copy, line_no, version, 'version')
             continue
-        git, version, url = match.groups()
+        branch, git, version, url = match.groups()
 
         if git and not version:
             match = URL_COMMIT_PATTERN.search(url)
@@ -127,6 +135,7 @@ def parse_requirements(md_path: Path) -> Iterator[ Union[ Tuple[VendoredLibrary,
             version=version,
             modules=modules,
             git=bool(git),
+            branch=branch,
             url=url,
             usage=usage,
             notes=notes,

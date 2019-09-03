@@ -40,7 +40,8 @@ def make_list_item(req: VendoredLibrary, packages_pattern: Pattern[AnyStr]):
     if not req.git:
         version = f'[{req.version}]({req.url})'
     else:
-        version = f'[{req.version[:7]}]({req.url})'
+        branch = f'{req.branch}@' if req.branch else ''
+        version = f'[{branch}{req.version[:7]}]({req.url})'
         if '/pymedusa/' in req.url:
             version = f'pymedusa/{version}'
 
