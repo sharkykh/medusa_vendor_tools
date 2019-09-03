@@ -32,6 +32,7 @@ setup(
     python_requires='>=3.7.0',
     install_requires=[
         'pip >=19.1.1',
+        'requests >=2.18.4,<3.0.0',
         'setuptools >=41.0.0',
     ],
     entry_points={

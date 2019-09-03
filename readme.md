@@ -11,11 +11,13 @@ Tools for dealing with the vendored libraries and requirement lists in [**pymedu
 
 ## Requirements
 - Python 3.7 or later
-##### Additionally, for the vendor command:
+##### Additionally, for the `vendor` command:
 - [Python Launcher (`py`)](https://docs.python.org/3/using/windows.html#launcher) installed and in PATH
 - Latest Python 2.7 installed and executable using `py -2.7`
 - `pip` tool installed
 - [`setuptools`](https://pypi.org/project/setuptools) library installed
+##### Additionally, for the `outdated` command:
+- [`requests`](https://pypi.org/project/requests) library installed
 
 ## Installation
 **Recommended:** Clone this repository and install in "editable" mode:
@@ -72,6 +74,21 @@ optional arguments:
                         `--json`: `requirements.json`)
   -a, --all-packages    List all packages, not just those used by Medusa
   -j, --json            export as JSON to `requirements.json` (or OUTFILE)
+```
+
+#### [`mvt outdated`](/mvt/outdated.py)
+List outdated packages.
+```
+usage: mvt outdated [-h] [-f LISTFILE] [package [package ...]]
+
+positional arguments:
+  package              Package(s) to check. If not provided, checks all of
+                        the packages.
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -f LISTFILE, --listfile LISTFILE
+                        List file to check. Defaults to `ext/readme.md`
 ```
 
 #### [`mvt parse`](/mvt/parse.py)
