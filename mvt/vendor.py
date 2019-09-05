@@ -37,7 +37,7 @@ MIN_PYTHON_2 = '2.7.10'
 MIN_PYTHON_3 = '3.5.2'
 # https://github.com/:owner/:repo/archive/:commit-ish.tar.gz#egg=name
 # https://codeload.github.com/:owner/:repo/tar.gz/:commit-ish#egg=name
-GITHUB_URL_PATTERN: Pattern = re.compile(r'github.com/(?P<slug>.+?/.+?)/', re.IGNORECASE)
+GITHUB_URL_PATTERN: Pattern = re.compile(r'github\.com/(?P<slug>.+?/.+?)/[^/]+?/(?P<commit_ish>[^.#]+)', re.IGNORECASE)
 
 
 # Main method
@@ -516,7 +516,7 @@ def install(
     modules = get_modules(vendor_dir, installed_pkg, parsed_package)
 
     # Update version and url
-    version, url, is_git = get_version_and_url(installed_pkg, parsed_package, source_commit_hash)
+    version, url, is_git, branch = get_version_and_url(installed_pkg, parsed_package, source_commit_hash)
 
     result = VendoredLibrary(
         folder=[vendor_dir.name],
@@ -524,6 +524,7 @@ def install(
         version=version,
         modules=modules,
         git=is_git,
+        branch=branch,
         url=url,
     )
 
@@ -618,9 +619,10 @@ def get_version_and_url(
     installed_pkg: AnyDistribution,
     parsed_package: Requirement,
     source_commit_hash: Optional[str],
-) -> (str, str, bool):
+) -> (str, str, bool, Optional[str]):
     """Get the installed package's version and url, and whether or not it's a git dependency."""
     is_git = bool(source_commit_hash)
+    branch = None
     if is_git:
         match = None
         if parsed_package.url and 'github.com' in parsed_package.url:
@@ -640,6 +642,10 @@ def get_version_and_url(
         else:
             groups: Mapping[str, str] = match.groupdict()
             slug = groups['slug']
+            # If the extracted commit hash is different from the one in the provided URL,
+            # we've been provided with a branch name.
+            if source_commit_hash != groups['commit_ish']:
+                branch = groups['commit_ish']
 
         url = url.format(slug=slug, commit=source_commit_hash)
         version = source_commit_hash
@@ -647,4 +653,4 @@ def get_version_and_url(
         version = installed_pkg.version
         url = f'https://pypi.org/project/{installed_pkg.project_name}/{version}/'
 
-    return version, url, is_git
+    return version, url, is_git, branch
