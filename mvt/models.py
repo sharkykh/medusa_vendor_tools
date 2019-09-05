@@ -14,8 +14,8 @@ class VendoredLibrary:
     version: str
     modules: List[str]
     git: bool
-    branch: str
     url: str
+    branch: str = None
     usage: List[str] = field(default_factory=list)
     notes: List[str] = field(default_factory=list)
 
