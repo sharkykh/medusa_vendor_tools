@@ -248,7 +248,7 @@ def extract_source(source_path: Path) -> (Path, Optional[str]):
     extracted_path = source_path.with_name(source_path.stem)
     commit_hash = None
 
-    if source_path.suffix == '.tar.gz':
+    if source_path.suffixes[-2:] == ['.tar', '.gz']:
         with TarFile.open(str(source_path), 'r:gz') as tar:
             # Commit hash (if downloaded from GitHub)
             commit_hash = tar.pax_headers.get('comment')
