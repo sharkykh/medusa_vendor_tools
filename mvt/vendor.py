@@ -243,21 +243,24 @@ class SourceDownloadFailed(Exception):
 
 def extract_source(source_path: Path) -> (Path, Optional[str]):
     """Extract the source archive, return the extracted path and optionally the commit hash stored inside."""
-    folder_name = source_path.name.replace('.tar.gz', '')
-    extracted_path = source_path.with_name(folder_name)
-
+    extracted_path = source_path.with_name(source_path.stem)
     commit_hash = None
-    with TarFile.open(str(source_path), 'r:gz') as tar:
-        # Commit hash (if downloaded from GitHub)
-        commit_hash = tar.pax_headers.get('comment')
-        # Update extracted path because:
-        # `<commit-hash>[.tar.gz]` extracts a folder named `repo-name-<commit-hash>`
-        # `<branch-name>[.tar.gz]` extracts a folder named `repo-name-<branch-name>`
-        root_files = [name for name in tar.getnames() if '/' not in name]
-        if len(root_files) == 1:
-            extracted_path = source_path.with_name(root_files[0])
 
-        tar.extractall(str(extracted_path.parent))
+    if source_path.suffix == '.tar.gz':
+        with TarFile.open(str(source_path), 'r:gz') as tar:
+            # Commit hash (if downloaded from GitHub)
+            commit_hash = tar.pax_headers.get('comment')
+            # Update extracted path because:
+            # `<commit-hash>[.tar.gz]` extracts a folder named `repo-name-<commit-hash>`
+            # `<branch-name>[.tar.gz]` extracts a folder named `repo-name-<branch-name>`
+            root_files = [name for name in tar.getnames() if '/' not in name]
+            if len(root_files) == 1:
+                extracted_path = source_path.with_name(root_files[0])
+
+            tar.extractall(str(extracted_path.parent))
+
+    else:
+        raise TypeError('Incompatible source archive type')
 
     return extracted_path, commit_hash
 
