@@ -158,14 +158,15 @@ def vendor(listfile: str, package: str, py2: bool, py3: bool) -> None:
     with listpath.open('w', encoding='utf-8', newline='\n') as fh:
         fh.write(''.join(md_data))
 
-    print('Updating requirements.txt')
-    reqs_file = root / 'requirements.txt'
-    generate_requirements(
-        infile=str(listpath),
-        outfile=str(reqs_file),
-        all_packages=False,
-        json_output=False,
-    )
+    if target == 'ext':
+        print('Updating requirements.txt')
+        reqs_file = root / 'requirements.txt'
+        generate_requirements(
+            infile=str(listpath),
+            outfile=str(reqs_file),
+            all_packages=False,
+            json_output=False,
+        )
 
     print('Done!')
 
