@@ -32,6 +32,7 @@ Then update using `git pull` in the repository directory.
 ```shell
 pip install https://github.com/sharkykh/medusa_vendor_tools/archive/master.tar.gz
 ```
+(can also use `.zip` archive)
 
 ## Usage
 The script requires that you run it within your Medusa's root folder, meaning:

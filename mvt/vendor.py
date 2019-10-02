@@ -15,6 +15,7 @@ from typing import (
     Pattern,
     Union,
 )
+from zipfile import ZipFile
 
 import pkg_resources
 from pkg_resources._vendor.packaging.requirements import InvalidRequirement, Requirement
@@ -37,6 +38,7 @@ MIN_PYTHON_2 = '2.7.10'
 MIN_PYTHON_3 = '3.5.2'
 # https://github.com/:owner/:repo/archive/:commit-ish.tar.gz#egg=name
 # https://codeload.github.com/:owner/:repo/tar.gz/:commit-ish#egg=name
+# Can also use `zip` in place of `tar.gz`
 GITHUB_URL_PATTERN: Pattern = re.compile(r'github\.com/(?P<slug>.+?/.+?)/[^/]+?/(?P<commit_ish>.+?)(?:\.tar\.gz|\.zip)?#', re.IGNORECASE)
 
 
@@ -258,6 +260,27 @@ def extract_source(source_path: Path) -> (Path, Optional[str]):
                 extracted_path = source_path.with_name(root_files[0])
 
             tar.extractall(str(extracted_path.parent))
+
+    elif source_path.suffix == '.zip':
+        with ZipFile(str(source_path), 'r') as zipf:
+            # Commit hash (if downloaded from GitHub)
+            if zipf.comment:
+                commit_hash = zipf.comment.decode('utf-8')
+            # Update extracted path because:
+            # `<commit-hash>[.zip]` extracts a folder named `repo-name-<commit-hash>`
+            # `<branch-name>[.zip]` extracts a folder named `repo-name-<branch-name>`
+            root_folders = []
+            root_files = []
+            for name in zipf.namelist():
+                if name.count('/') == 1 and name.endswith('/'):
+                    root_folders.append(name.rstrip('/'))
+                if name.count('/') == 0:
+                    root_files.append(name)
+            # If only one root folder
+            if len(root_folders) == 1 and len(root_files) == 0:
+                extracted_path = source_path.with_name(root_folders[0])
+
+            zipf.extractall(str(extracted_path.parent))
 
     else:
         raise TypeError('Incompatible source archive type')
