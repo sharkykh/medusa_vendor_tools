@@ -5,7 +5,7 @@ Tools for dealing with the vendored libraries and requirement lists in [**pymedu
 ## Notes about the tools
 - They are very much a **work in progress**, and could fail at any time.
 - They are made to be used on Medusa's `develop` branch and feature branches targeting `develop`.
-- Their documentation isn't good.
+- Their documentation isn't great.
 - They are **far from perfect**, and you should always verify the changes before committing / pushing them.
 - They are targeted towards Windows.
 

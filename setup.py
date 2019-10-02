@@ -4,7 +4,7 @@ from mvt import __version__
 
 try:
     from pathlib import Path
-    readme_path = Path(__file__).parent / 'README.md'
+    readme_path = Path(__file__).with_name('README.md')
     long_description = readme_path.read_text()
 except ImportError:
     long_description = None
@@ -24,7 +24,6 @@ setup(
         'Environment :: Console',
         'Intended Audience :: Developers',
         'Operating System :: Microsoft :: Windows',
-        'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.7',
     ],
     packages=find_packages(),
