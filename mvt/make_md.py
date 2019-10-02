@@ -37,7 +37,9 @@ def make_list_item(req: VendoredLibrary, packages_pattern: Pattern[AnyStr]):
         package += '<br>' + '<br>'.join(f'`{m}`' for m in req.modules[1:])
 
     # Version
-    if not req.git:
+    if req.version is None:
+        version = '-'
+    elif not req.git:
         version = f'[{req.version}]({req.url})'
     else:
         branch = f'{req.branch}@' if req.branch else ''
