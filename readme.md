@@ -37,7 +37,7 @@ pip install https://github.com/sharkykh/medusa_vendor_tools/archive/master.tar.g
 ## Usage
 The script requires that you run it within your Medusa's root folder, meaning:
 ```shell
-cd /path/to/Medusa
+cd C:\path\to\Medusa
 mvt -h
 mvt <command> [-h | <arguments>]
 ```
