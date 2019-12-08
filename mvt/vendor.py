@@ -6,7 +6,7 @@ import shutil
 import subprocess
 import sys
 from pathlib import Path
-from tarfile import TarFile
+from tarfile import TarFile, is_tarfile
 from textwrap import dedent
 from typing import (
     List,
@@ -15,7 +15,7 @@ from typing import (
     Pattern,
     Union,
 )
-from zipfile import ZipFile
+from zipfile import ZipFile, is_zipfile
 
 import pkg_resources
 from pkg_resources._vendor.packaging.requirements import InvalidRequirement, Requirement
@@ -249,7 +249,24 @@ def extract_source(source_path: Path) -> (Path, Optional[str]):
     extracted_path = source_path.with_name(source_path.stem)
     commit_hash = None
 
-    if source_path.suffixes[-2:] == ['.tar', '.gz']:
+    # Determine the source archive type before extracting it
+    # When downloading from `codeload.github.com`, there is no suffix.
+    if not source_path.suffix:
+        source_path_str = str(source_path.resolve())
+        if is_tarfile(source_path_str):
+            archive_type = 'targz'
+        elif is_zipfile(source_path_str):
+            archive_type = 'zip'
+        else:
+            raise TypeError(f'Unknown source archive type: `{source_path.name}`')
+    elif source_path.suffixes[-2:] == ['.tar', '.gz']:
+        archive_type = 'targz'
+    elif source_path.suffix == '.zip':
+        archive_type = 'zip'
+    else:
+        raise TypeError(f'Incompatible source archive type: `{source_path.name}`')
+
+    if archive_type == 'targz':
         with TarFile.open(str(source_path), 'r:gz') as tar:
             # Commit hash (if downloaded from GitHub)
             commit_hash = tar.pax_headers.get('comment')
@@ -262,7 +279,7 @@ def extract_source(source_path: Path) -> (Path, Optional[str]):
 
             tar.extractall(str(extracted_path.parent))
 
-    elif source_path.suffix == '.zip':
+    elif archive_type == 'zip':
         with ZipFile(str(source_path), 'r') as zipf:
             # Commit hash (if downloaded from GitHub)
             if zipf.comment:
@@ -282,9 +299,6 @@ def extract_source(source_path: Path) -> (Path, Optional[str]):
                 extracted_path = source_path.with_name(root_folders[0])
 
             zipf.extractall(str(extracted_path.parent))
-
-    else:
-        raise TypeError('Incompatible source archive type')
 
     return extracted_path, commit_hash
 
