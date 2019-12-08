@@ -18,7 +18,7 @@ VERSION_PATTERN = re.compile(
     r'(?:\w+/)?'
     r'\[(?:'
     r'(?:(?P<branch>.+?)@)?(?P<git>commit|[a-f0-9]+)'
-    r'|(?P<version>[\d.]+)'
+    r'|(?P<version>.+?)'
     r')\]'
     r'\((?P<url>[\w.:/-]+)\)',
     re.IGNORECASE
