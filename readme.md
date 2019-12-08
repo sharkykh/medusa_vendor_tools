@@ -11,7 +11,7 @@ Tools for dealing with the vendored libraries and requirement lists in [**pymedu
 
 ## Requirements
 - Python 3.7 or later
-##### Additionally, for the `vendor` command:
+##### Additionally, for the `vendor`/`update` command:
 - [Python Launcher (`py`)](https://docs.python.org/3/using/windows.html#launcher) installed and in PATH
 - Latest Python 2.7 installed and executable using `py -2.7`
 - `pip` tool installed
@@ -56,6 +56,21 @@ optional arguments:
   -h, --help            show this help message and exit
   -2, --py2             Install Python 2 version to [target]2
   -3, --py3             Install Python 3 version to [target]3
+  -f LISTFILE, --listfile LISTFILE
+                        List file to update (affects target folders). Defaults
+                        to `ext/readme.md`
+```
+
+#### [`mvt update`](/mvt/update.py)
+Update already-vendored library by name.
+```
+usage: mvt update [-h] [-f LISTFILE] package
+
+positional arguments:
+  package               Package name to update
+
+optional arguments:
+  -h, --help            show this help message and exit
   -f LISTFILE, --listfile LISTFILE
                         List file to update (affects target folders). Defaults
                         to `ext/readme.md`

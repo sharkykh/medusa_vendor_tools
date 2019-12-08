@@ -24,6 +24,15 @@ def main(args=None):
         help=f'List file to update (affects target folders). Defaults to `{DEFAULT_EXT_README}`'
     )
 
+    # Command: update
+    update_help = 'Update already-vendored library by name.'
+    update_parser = subparsers.add_parser('update', help=update_help, description=update_help)
+    update_parser.add_argument('package', help='Package name to update')
+    update_parser.add_argument(
+        '-f', '--listfile', default=DEFAULT_EXT_README,
+        help=f'List file to update (affects target folders). Defaults to `{DEFAULT_EXT_README}`'
+    )
+
     # Command: gen
     gen_help = 'Generate `requirements.txt` (or JSON) from `ext/readme.md`.'
     gen_parser = subparsers.add_parser('gen', help=gen_help, description=gen_help)
@@ -91,6 +100,13 @@ def main(args=None):
             package=args.package,
             py2=args.py2,
             py3=args.py3,
+        )
+
+    if args.command == 'update':
+        from .update import update
+        update(
+            listfile=args.listfile,
+            package=args.package,
         )
 
     if args.command == 'gen':

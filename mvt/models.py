@@ -46,6 +46,18 @@ class VendoredLibrary:
         else:
             return f'{self.package}=={self.version}{self.markers}'
 
+    def as_update_requirement(self):
+        if self.git:
+            if 'github.com' in self.url:
+                # https://github.com/:org/:repo/archive/:commit-ish.tar.gz
+                git_url = self.GIT_REPLACE_PATTERN.sub('/archive/', self.url) + '.tar.gz'
+                git_url = git_url.replace(self.version, self.branch or 'HEAD')
+                return f'{self.package} @ {git_url}#egg={self.package}'
+            else:
+                raise ValueError('Only github.com is supported currently.')
+        else:
+            return f'{self.package}'
+
     @property
     def markers(self):
         markers = ''

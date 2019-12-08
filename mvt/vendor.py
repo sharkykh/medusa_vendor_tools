@@ -685,7 +685,8 @@ def get_version_and_url(
             slug = groups['slug']
             # If the extracted commit hash is different from the one in the provided URL,
             # we've been provided with a branch name.
-            if source_commit_hash != groups['commit_ish']:
+            # Note: `HEAD` just points to the default branch, so it should not be marked.
+            if source_commit_hash != groups['commit_ish'] and groups['commit_ish'] != 'HEAD':
                 branch = groups['commit_ish']
 
         url = url.format(slug=slug, commit=source_commit_hash)
