@@ -1,6 +1,7 @@
 # coding: utf-8
 """Vendor (or update existing) libraries."""
 import email.parser
+import os
 import re
 import shutil
 import subprocess
@@ -154,6 +155,9 @@ def vendor(listfile: str, package: str, py2: bool, py3: bool) -> None:
         requirements.append(installed)
 
     md_data = make_md(requirements)
+
+    if not listpath.parent.exists():
+        os.makedirs(listpath.parent, exist_ok=True)
 
     with listpath.open('w', encoding='utf-8', newline='\n') as fh:
         fh.write(''.join(md_data))
@@ -488,6 +492,9 @@ def run_dependency_checks(installed: VendoredLibrary, dependencies: List[Require
         if not dep_req.used_by(installed_pkg_lower):
             print(f'Adding {installed_pkg_name} to the "usage" column of {dep_req_name}')
             dep_req.usage.append(installed_pkg_name)
+
+            if '<UPDATE-ME>' in dep_req.usage:
+                dep_req.usage.remove('<UPDATE-ME>')
 
     print('+++++++++++++++++++++')
 

@@ -60,6 +60,9 @@ class LineParseError(Exception):
 
 def parse_requirements(md_path: Path) -> Iterator[ Union[ Tuple[VendoredLibrary, None], Tuple[None, LineParseError] ] ]:
     """Yields `(VendoredLibrary, None)` or `(None, LineParseError)`."""
+    if not md_path.exists():
+        return
+
     with md_path.open('r', encoding='utf-8') as file:
         lines = file.readlines()
 

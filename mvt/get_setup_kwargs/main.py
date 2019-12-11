@@ -109,6 +109,7 @@ def import_setup_from_path_once(setup_path: Path, as_main=True):
     else:
         setup_py: Path = setup_path / 'setup.py'
 
+    setup_py = setup_py.resolve()
     setup_folder = setup_py.parent
 
     # Load it with `__name__` set to `'__main__'`
