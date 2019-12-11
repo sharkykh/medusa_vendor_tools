@@ -585,10 +585,6 @@ class InstallFailed(Exception):
     pass
 
 
-class InstallFailed(Exception):
-    pass
-
-
 def get_modules(vendor_dir: Path, installed_pkg: AnyDistribution, parsed_package: Requirement) -> List[str]:
     """Get a list of all the top-level modules/files names, with the "main" module being the first."""
     using: str = None
