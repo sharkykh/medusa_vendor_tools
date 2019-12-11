@@ -17,8 +17,9 @@ def main(args=None):
     vendor_help = 'Vendor (or update existing) libraries.'
     vendor_parser = subparsers.add_parser('vendor', help=vendor_help, description=vendor_help)
     vendor_parser.add_argument('package', help='Package to vendor')
-    vendor_parser.add_argument('-2', '--py2', action='store_true', help='Install Python 2 version to [target]2')
-    vendor_parser.add_argument('-3', '--py3', action='store_true', help='Install Python 3 version to [target]3')
+    vendor_parser.add_argument('-2', '--py2', action='store_true', help='Force install Python 2 version to [target]2')
+    vendor_parser.add_argument('-3', '--py3', action='store_true', help='Force install Python 3 version to [target]3')
+    vendor_parser.add_argument('-6', '--py6', action='store_true', help='Force install Python 3 version to [target]')
     vendor_parser.add_argument(
         '-f', '--listfile', default=DEFAULT_EXT_README,
         help=f'List file to update (affects target folders). Defaults to `{DEFAULT_EXT_README}`'
@@ -94,12 +95,17 @@ def main(args=None):
     args = parser.parse_args(args)
 
     if args.command == 'vendor':
+        if args.py6 and (args.py2 or args.py3):
+            print('ERROR: --py6 and --py2/--py3 cannot be combined.')
+            return
+
         from .vendor import vendor
         vendor(
             listfile=args.listfile,
             package=args.package,
             py2=args.py2,
             py3=args.py3,
+            py6=args.py6,
         )
 
     if args.command == 'update':

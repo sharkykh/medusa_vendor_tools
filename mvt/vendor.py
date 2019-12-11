@@ -44,7 +44,7 @@ GITHUB_URL_PATTERN: Pattern = re.compile(r'github\.com/(?P<slug>.+?/.+?)/[^/]+?/
 
 
 # Main method
-def vendor(listfile: str, package: str, py2: bool, py3: bool) -> None:
+def vendor(listfile: str, package: str, py2: bool, py3: bool, py6: bool) -> None:
     listpath = Path(listfile).resolve()
     root = listpath.parent.parent
 
@@ -93,7 +93,7 @@ def vendor(listfile: str, package: str, py2: bool, py3: bool) -> None:
         except OSError:
             pass
 
-        if not py2 and not py3:
+        if not py2 and not py3 and not py6:
             print(f'Package {package_name} found in list, using that')
             install_folders = req.folder
         else:
@@ -116,7 +116,7 @@ def vendor(listfile: str, package: str, py2: bool, py3: bool) -> None:
         return
 
     if not install_folders:
-        install_folders = make_list_of_folders(target, **setup_py_results['versions'])
+        install_folders = make_list_of_folders(target, py6=py6, **setup_py_results['versions'])
 
     dependencies = setup_py_results['dependencies']
 
@@ -416,10 +416,10 @@ def filter_unique_dependencies(deps_py2: List[str], deps_py3: List[str]) -> List
     return dependencies
 
 
-def make_list_of_folders(target: str, py2: bool, py3: bool) -> List[str]:
+def make_list_of_folders(target: str, py2: bool, py3: bool, py6: bool) -> List[str]:
     """Generate a list of target folders based on targeted Python versions."""
     install_folders: List[str] = []
-    if not py2 and not py3:  # if neither, normal
+    if py6 or (not py2 and not py3):  # if py6 or neither, normal
         install_folders.append(target)
     else:  # if either one, or both, target for each major version
         if py2:  # py2 only
