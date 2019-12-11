@@ -1,6 +1,5 @@
 # coding: utf-8
 """Vendor (or update existing) libraries."""
-import email.parser
 import os
 import re
 import shutil
