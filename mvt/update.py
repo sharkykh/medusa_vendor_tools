@@ -44,4 +44,5 @@ def update(listfile: Union[Path, str], package: str) -> None:
         package=requirement,
         py2=False,
         py3=False,
+        py6=False,
     )
