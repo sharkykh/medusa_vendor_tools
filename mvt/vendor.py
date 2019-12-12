@@ -6,7 +6,7 @@ import shutil
 import subprocess
 import sys
 from pathlib import Path
-from tarfile import TarFile, is_tarfile
+from tarfile import TarFile
 from textwrap import dedent
 from typing import (
     List,
@@ -15,7 +15,7 @@ from typing import (
     Pattern,
     Union,
 )
-from zipfile import ZipFile, is_zipfile
+from zipfile import ZipFile
 
 import pkg_resources
 from pkg_resources._vendor.packaging.requirements import InvalidRequirement, Requirement
@@ -253,24 +253,25 @@ def extract_source(source_path: Path) -> (Path, Optional[str]):
     commit_hash = None
 
     # Determine the source archive type before extracting it
-    # When downloading from `codeload.github.com`, there is no suffix.
-    if not source_path.suffix:
-        source_path_str = str(source_path.resolve())
-        if is_tarfile(source_path_str):
-            archive_type = 'targz'
-        elif is_zipfile(source_path_str):
-            archive_type = 'zip'
-        else:
-            raise TypeError(f'Unknown source archive type: `{source_path.name}`')
-    elif source_path.suffixes[-2:] == ['.tar', '.gz']:
-        archive_type = 'targz'
-    elif source_path.suffix == '.zip':
-        archive_type = 'zip'
-    else:
-        raise TypeError(f'Incompatible source archive type: `{source_path.name}`')
+    # Inspired by: https://stackoverflow.com/a/13044946/7597273
+    magic_dict = {
+        b'\x1f\x8b\x08': 'gz',
+        b'\x42\x5a\x68': 'bz2',
+        b'\x50\x4b\x03\x04': 'zip',
+    }
+    max_len = max(len(x) for x in magic_dict)
 
-    if archive_type == 'targz':
-        with TarFile.open(str(source_path), 'r:gz') as tar:
+    with source_path.open('rb') as f:
+        file_start: bytes = f.read(max_len)
+
+    for magic, archive_type in magic_dict.items():
+        if file_start.startswith(magic):
+            break
+    else:
+        raise TypeError(f'Unknown source archive type: `{source_path.name}`')
+
+    if archive_type in ('gz', 'bz2'):
+        with TarFile.open(str(source_path), 'r:' + archive_type) as tar:
             # Commit hash (if downloaded from GitHub)
             commit_hash = tar.pax_headers.get('comment')
             # Update extracted path because:
