@@ -72,6 +72,8 @@ positional arguments:
 
 optional arguments:
   -h, --help            show this help message and exit
+  -c, --cmd             Generate a `vendor` command for the provided package
+                        (does not update)
   -f LISTFILE, --listfile LISTFILE
                         List file to update (affects target folders). Defaults
                         to `ext/readme.md`

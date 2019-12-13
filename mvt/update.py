@@ -12,7 +12,7 @@ from .vendor import vendor
 from .models import VendoredLibrary
 
 
-def update(listfile: Union[Path, str], package: str) -> None:
+def update(listfile: Union[Path, str], package: str, cmd: bool) -> None:
     if not isinstance(listfile, Path):
         listfile = Path(listfile)
 
@@ -33,9 +33,16 @@ def update(listfile: Union[Path, str], package: str) -> None:
         print(f'Package `{package}` not found.')
         return
 
-    print(f'Running vendor command for: `{req.package}`')
     requirement = req.as_update_requirement()
-    print(f'mvt vendor {requirement}')
+    req_str = f'"{requirement}"' if ' ' in requirement else requirement
+
+    if cmd:
+        print(f'Vendor command for: `{req.package}`')
+        print(f'> mvt vendor {req_str}')
+        return
+
+    print(f'Running vendor command for: `{req.package}`')
+    print(f'mvt vendor {req_str}')
     print('\n===========================================\n')
     sys.stdout.flush()
 

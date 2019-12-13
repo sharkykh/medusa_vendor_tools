@@ -30,6 +30,10 @@ def main(args=None):
     update_parser = subparsers.add_parser('update', help=update_help, description=update_help)
     update_parser.add_argument('package', help='Package name to update')
     update_parser.add_argument(
+        '-c', '--cmd', action='store_true', default=False,
+        help=f'Generate a `vendor` command for the provided package (does not update)'
+    )
+    update_parser.add_argument(
         '-f', '--listfile', default=DEFAULT_EXT_README,
         help=f'List file to update (affects target folders). Defaults to `{DEFAULT_EXT_README}`'
     )
@@ -113,6 +117,7 @@ def main(args=None):
         update(
             listfile=args.listfile,
             package=args.package,
+            cmd=args.cmd,
         )
 
     if args.command == 'gen':
