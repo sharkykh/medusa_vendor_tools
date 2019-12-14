@@ -8,8 +8,9 @@ from typing import (
 )
 
 from . import parse
-from .vendor import vendor
+from .__main__ import DEFAULT_EXT_README
 from .models import VendoredLibrary
+from .vendor import vendor
 
 
 def update(listfile: Union[Path, str], package: str, cmd: bool) -> None:
@@ -36,9 +37,15 @@ def update(listfile: Union[Path, str], package: str, cmd: bool) -> None:
     requirement = req.as_update_requirement()
     req_str = f'"{requirement}"' if ' ' in requirement else requirement
 
+    listfile_str = str(listfile)
+
     if cmd:
         print(f'Vendor command for: `{req.package}`')
-        print(f'> mvt vendor {req_str}')
+        if listfile == Path(DEFAULT_EXT_README):
+            print(f'> mvt vendor {req_str}')
+        else:
+            listfile_escaped =f'"{listfile_str}"' if ' ' in listfile_str else listfile_str
+            print(f'> mvt vendor -f {listfile_escaped} {req_str}')
         return
 
     print(f'Running vendor command for: `{req.package}`')
