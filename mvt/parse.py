@@ -71,46 +71,45 @@ def parse_requirements(md_path: Path) -> Iterator[ Union[ Tuple[VendoredLibrary,
         if not line:
             break
 
-        line_copy = line[:]
-        line = STRIP_PATTERN.sub('', line)
-
         # Split by columns
         columns = line.split(' | ')
         if len(columns) != 5:
-            yield None, LineParseError(line_copy, line_no, section='columns')
+            yield None, LineParseError(line, line_no, section='columns')
             continue
         folder, package, version, usage, notes = columns
 
         # Folder
         if not folder.strip():
-            yield None, LineParseError(line_copy, line_no, folder, 'folder')
+            yield None, LineParseError(line, line_no, folder, 'folder')
             continue
         folder = folder.strip(' *').split(' ')
 
         # Usage
         if usage:
+            usage = STRIP_PATTERN.sub('', usage)
             usage = [pkg.replace('**', '') for pkg in usage.split(', ')]
         else:
             usage = []
 
         # Package / Extra Modules
-        match = PACKAGE_PATTERN.match(package)
+        package_simple = STRIP_PATTERN.sub('', package)
+        match = PACKAGE_PATTERN.match(package_simple)
         if not match:
-            yield None, LineParseError(line_copy, line_no, package, 'package')
+            yield None, LineParseError(line, line_no, package, 'package')
             continue
         package, extra_modules = match.groups()
 
         # Version
         match = VERSION_PATTERN.match(version)
         if not match:
-            yield None, LineParseError(line_copy, line_no, version, 'version')
+            yield None, LineParseError(line, line_no, version, 'version')
             continue
         branch, git, version, url = match.groups()
 
         if git and not version:
             match = URL_COMMIT_PATTERN.search(url)
             if not match:
-                yield None, LineParseError(line_copy, line_no, url, 'url')
+                yield None, LineParseError(line, line_no, url, 'url')
                 continue
             version = match.group(1)
 
@@ -120,7 +119,8 @@ def parse_requirements(md_path: Path) -> Iterator[ Union[ Tuple[VendoredLibrary,
         notes = []
         for note in split_notes:
             if note.startswith(('Module: ', 'File: ')):
-                module = note.split(': ', 1)[1]
+                start = note.index(': ') + 3
+                module = note[start:-1]
                 continue
             if note == '-':
                 continue
@@ -151,6 +151,7 @@ def test(file):
     file_path = Path(file)
     for req, error in parse_requirements(file_path):
         if error:
-            raise error
+            print(error)
+            continue
 
         print(f'Parsed package: {req.package}')
