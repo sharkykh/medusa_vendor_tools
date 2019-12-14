@@ -79,9 +79,7 @@ def make_list_item(req: VendoredLibrary, packages_pattern: Pattern[AnyStr]):
         elif req.main_module != req.package:
             notes.append(f'Module: `{req.main_module}`')
 
-    if req.notes:
-        notes.extend(packages_pattern.sub(r'\1`\2`\3', note) for note in req.notes)
-
+    notes.extend(req.notes)
     notes = '<br>'.join(notes) if notes else '-'
 
     return ' | '.join((folder, package, version, usage, notes))
