@@ -70,6 +70,15 @@ def main(args=None):
         help=f'List file to check. Defaults to `{DEFAULT_EXT_README}`'
     )
 
+    # Command: remove
+    remove_help = 'Remove vendored library by name.'
+    remove_parser = subparsers.add_parser('remove', help=remove_help, description=remove_help)
+    remove_parser.add_argument('package', help='Package name to remove')
+    remove_parser.add_argument(
+        '-f', '--listfile', default=DEFAULT_EXT_README,
+        help=f'List file to update (affects target folders). Defaults to `{DEFAULT_EXT_README}`'
+    )
+
     # Command: parse
     parse_help = 'Test parsing `ext/readme.md` or `lib/readme.md`.'
     parse_parser = subparsers.add_parser('parse', help=parse_help, description=parse_help)
@@ -137,6 +146,13 @@ def main(args=None):
         outdated(
             listfile=args.listfile,
             packages=args.packages,
+        )
+
+    if args.command == 'remove':
+        from .remove import remove
+        remove(
+            listfile=args.listfile,
+            package=args.package,
         )
 
     if args.command == 'parse':

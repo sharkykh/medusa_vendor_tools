@@ -110,6 +110,21 @@ optional arguments:
                         List file to check. Defaults to `ext/readme.md`
 ```
 
+#### [`mvt remove`](/mvt/remove.py)
+Remove vendored library by name.
+```
+usage: mvt remove [-h] [-f LISTFILE] package
+
+positional arguments:
+  package               Package name to remove
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -f LISTFILE, --listfile LISTFILE
+                        List file to update (affects target folders). Defaults
+                        to `ext/readme.md`
+```
+
 #### [`mvt parse`](/mvt/parse.py)
 Test parsing `ext/readme.md` or `lib/readme.md`.
 ```

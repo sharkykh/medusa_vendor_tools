@@ -495,6 +495,8 @@ def run_dependency_checks(installed: VendoredLibrary, dependencies: List[Require
 
             if '<UPDATE-ME>' in dep_req.usage:
                 dep_req.usage.remove('<UPDATE-ME>')
+            if '<UNUSED>' in dep_req.usage:
+                dep_req.usage.remove('<UNUSED>')
 
     print('+++++++++++++++++++++')
 
