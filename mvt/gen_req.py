@@ -27,7 +27,7 @@ def generate_requirements(infile: str, outfile: str, all_packages: bool = False,
 
         requirements.append(req)
 
-    requirements.sort(key=lambda r: r.package.lower())
+    requirements.sort(key=lambda r: r.name.lower())
 
     if json_output:
         import json

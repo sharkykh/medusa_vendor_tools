@@ -129,7 +129,7 @@ def vendor(listfile: str, package: str, py2: bool, py3: bool, py6: bool) -> None
             py2=folder.endswith('2'),
         )
 
-        print(f'Installed: {installed.package}=={installed.version} to {folder}')
+        print(f'Installed: {installed.name}=={installed.version} to {folder}')
 
     installed.folder = install_folders
 
@@ -209,7 +209,7 @@ def load_requirements(listpath: Path, package_name: str) -> (List[VendoredLibrar
             raise error
         requirements.append(req)
 
-        if package_name_lower == req.package.lower():
+        if package_name_lower == req.name.lower():
             req_idx = index
 
     return requirements, req_idx
@@ -442,7 +442,7 @@ def run_dependency_checks(installed: VendoredLibrary, dependencies: List[Require
     print('+ Dependency checks +')
     print('+-------------------+')
 
-    installed_pkg_name: str = installed.package
+    installed_pkg_name: str = installed.name
     installed_pkg_lower = installed_pkg_name.lower()
 
     deps_fmt = '\n  '.join(map(str, dependencies)) or 'no dependencies'
@@ -454,7 +454,7 @@ def run_dependency_checks(installed: VendoredLibrary, dependencies: List[Require
     index: int
     req: VendoredLibrary
     for idx, req in enumerate(requirements):
-        req_name = req.package
+        req_name = req.name
         usage_lower = list(map(str.lower, req.usage))
 
         if installed_pkg_lower in usage_lower and req_name.lower() not in dep_names:
@@ -464,7 +464,7 @@ def run_dependency_checks(installed: VendoredLibrary, dependencies: List[Require
 
     # Check that the dependencies are installed (partial),
     #   and that their versions match the new specifier (also partial)
-    req_names: List[str] = [r.package.lower() for r in requirements]
+    req_names: List[str] = [r.name.lower() for r in requirements]
     # Types for the loop variables
     index: int
     dep: Requirement
@@ -481,7 +481,7 @@ def run_dependency_checks(installed: VendoredLibrary, dependencies: List[Require
             continue
 
         dep_req = requirements[dep_req_idx]
-        dep_req_name = dep_req.package
+        dep_req_name = dep_req.name
         dep_req_ver = dep_req.version
         if dep_req_ver not in dep.specifier:
             if dep_req.git:
@@ -570,7 +570,7 @@ def install(
 
     result = VendoredLibrary(
         folder=[vendor_dir.name],
-        package=installed_pkg.project_name,
+        name=installed_pkg.project_name,
         version=version,
         modules=modules,
         git=is_git,

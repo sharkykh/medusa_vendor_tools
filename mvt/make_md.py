@@ -14,7 +14,7 @@ from .models import VendoredLibrary
 
 
 def make_packages_pattern(requirements: List[VendoredLibrary]) -> Pattern[AnyStr]:
-    packages = map(lambda r: re.escape(r.package), requirements)
+    packages = map(lambda r: re.escape(r.name), requirements)
     return re.compile('(?<!`)(\b)?(' + '|'.join(packages) + ')(\b)?(?!`)')
 
 
@@ -27,10 +27,10 @@ def make_list_item(req: VendoredLibrary, packages_pattern: Pattern[AnyStr]):
         folder = f'**{folder}**'
 
     # Package
-    package = f'`{req.package}`'
-    mod_file_in_pkg = req.is_main_module_file and req.main_module[:-3] == req.package
+    package = f'`{req.name}`'
+    mod_file_in_pkg = req.is_main_module_file and req.main_module[:-3] == req.name
     if mod_file_in_pkg:
-        package = f'<code><b>{req.package}</b>.py</code>'
+        package = f'<code><b>{req.name}</b>.py</code>'
     if req.modules[1:]:
         if not mod_file_in_pkg:
             package = f'**{package}**'
@@ -74,9 +74,9 @@ def make_list_item(req: VendoredLibrary, packages_pattern: Pattern[AnyStr]):
     # Notes
     notes = []
     if not mod_file_in_pkg:
-        if req.is_main_module_file and req.main_module[:-3] != req.package:
+        if req.is_main_module_file and req.main_module[:-3] != req.name:
             notes.append(f'File: `{req.main_module}`')
-        elif req.main_module != req.package:
+        elif req.main_module != req.name:
             notes.append(f'Module: `{req.main_module}`')
 
     notes.extend(req.notes)
@@ -86,7 +86,7 @@ def make_list_item(req: VendoredLibrary, packages_pattern: Pattern[AnyStr]):
 
 
 def make_md(requirements: List[VendoredLibrary]):
-    requirements.sort(key=lambda req: req.package.lower())
+    requirements.sort(key=lambda req: req.name.lower())
 
     folder = requirements[0].folder[0].rstrip('23')
     packages_pattern = make_packages_pattern(requirements)

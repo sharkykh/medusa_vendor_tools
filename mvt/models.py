@@ -10,7 +10,7 @@ from typing import List
 class VendoredLibrary:
     """Represents a vendored library."""
     folder: List[str]
-    package: str
+    name: str
     version: str
     modules: List[str]
     git: bool
@@ -24,7 +24,7 @@ class VendoredLibrary:
     def json(self) -> OrderedDict:
         return OrderedDict([
             ('folder', self.folder),
-            ('package', self.package),
+            ('name', self.name),
             ('version', self.version),
             ('modules', self.modules),
             ('git', self.git),
@@ -42,9 +42,9 @@ class VendoredLibrary:
                 git_url = git_url.replace('https://github.com/', 'https://codeload.github.com/')
             else:
                 git_url = 'git+' + self.GIT_REPLACE_PATTERN.sub('.git@', self.url)
-            return f'{self.package} @ {git_url}#egg={self.package}{self.markers}'
+            return f'{self.name} @ {git_url}#egg={self.name}{self.markers}'
         else:
-            return f'{self.package}=={self.version}{self.markers}'
+            return f'{self.name}=={self.version}{self.markers}'
 
     def as_update_requirement(self):
         if self.git:
@@ -52,11 +52,11 @@ class VendoredLibrary:
                 # https://github.com/:org/:repo/archive/:commit-ish.tar.gz
                 git_url = self.GIT_REPLACE_PATTERN.sub('/archive/', self.url) + '.tar.gz'
                 git_url = git_url.replace(self.version, self.branch or 'HEAD')
-                return f'{self.package} @ {git_url}#egg={self.package}'
+                return f'{self.name} @ {git_url}#egg={self.name}'
             else:
                 raise ValueError('Only github.com is supported currently.')
         else:
-            return f'{self.package}'
+            return f'{self.name}'
 
     @property
     def markers(self):

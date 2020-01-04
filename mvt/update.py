@@ -28,7 +28,7 @@ def update(listfile: Union[Path, str], package: str, cmd: bool) -> None:
             print(str(error), file=sys.stderr)
             continue
 
-        if req.package.lower() == package_lower:
+        if req.name.lower() == package_lower:
             break
     else:
         print(f'Package `{package}` not found.')
@@ -40,7 +40,7 @@ def update(listfile: Union[Path, str], package: str, cmd: bool) -> None:
     listfile_str = str(listfile)
 
     if cmd:
-        print(f'Vendor command for: `{req.package}`')
+        print(f'Vendor command for: `{req.name}`')
         if listfile == Path(DEFAULT_EXT_README):
             print(f'> mvt vendor {req_str}')
         else:
@@ -48,7 +48,7 @@ def update(listfile: Union[Path, str], package: str, cmd: bool) -> None:
             print(f'> mvt vendor -f {listfile_escaped} {req_str}')
         return
 
-    print(f'Running vendor command for: `{req.package}`')
+    print(f'Running vendor command for: `{req.name}`')
     print(f'mvt vendor {req_str}')
     print('\n===========================================\n')
     sys.stdout.flush()

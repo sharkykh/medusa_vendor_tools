@@ -91,13 +91,13 @@ def parse_requirements(md_path: Path) -> Iterator[ Union[ Tuple[VendoredLibrary,
         else:
             usage = []
 
-        # Package / Extra Modules
+        # Package Name / Extra Modules
         package_simple = STRIP_PATTERN.sub('', package)
         match = PACKAGE_PATTERN.match(package_simple)
         if not match:
             yield None, LineParseError(line, line_no, package, 'package')
             continue
-        package, extra_modules = match.groups()
+        name, extra_modules = match.groups()
 
         # Version
         match = VERSION_PATTERN.match(version)
@@ -129,12 +129,12 @@ def parse_requirements(md_path: Path) -> Iterator[ Union[ Tuple[VendoredLibrary,
         extra_modules = extra_modules.split('<br>')
         first_item = extra_modules.pop(0)  # Could be an empty string
         if not module and first_item:  # `.py`
-            module = package + first_item
-        modules = [module or package] + extra_modules
+            module = name + first_item
+        modules = [module or name] + extra_modules
 
         result = VendoredLibrary(
             folder=folder,
-            package=package,
+            name=name,
             version=version,
             modules=modules,
             git=bool(git),
@@ -154,4 +154,4 @@ def test(file):
             print(error)
             continue
 
-        print(f'Parsed package: {req.package}')
+        print(f'Parsed package: {req.name}')
