@@ -51,15 +51,7 @@ def vendor(listfile: str, package: str, py2: bool, py3: bool, py6: bool) -> None
     parsed_package = parse_input(package)
     package_name: str = parsed_package.name
 
-    print(f'Starting vendor script for: {package_name}{parsed_package.specifier}')
-    if parsed_package.extras:
-        csv_extras = ','.join(parsed_package.extras)
-        print('=' * 60)
-        print(f'You provided a package with extra(s) ({package_name}[{csv_extras}]).')
-        print('Please note that extras can not be expressed on the lists!')
-        print('=' * 60)
-        if input('Press ENTER to continue (to abort - type anything and then press ENTER)'):
-            return
+    print(f'Starting vendor script for: {parsed_package}')
 
     # Get requirements from list, try to find the package we're vendoring right now
     requirements, req_idx = load_requirements(listpath, package_name)
@@ -129,7 +121,7 @@ def vendor(listfile: str, package: str, py2: bool, py3: bool, py6: bool) -> None
             py2=folder.endswith('2'),
         )
 
-        print(f'Installed: {installed.name}=={installed.version} to {folder}')
+        print(f'Installed: {installed.package}=={installed.version} to {folder}')
 
     installed.folder = install_folders
 
@@ -444,12 +436,18 @@ def run_dependency_checks(installed: VendoredLibrary, dependencies: List[Require
 
     installed_pkg_name: str = installed.name
     installed_pkg_lower = installed_pkg_name.lower()
+    installed_pkg_extras = [None] + installed.extras
 
     deps_fmt = '\n  '.join(map(str, dependencies)) or 'no dependencies'
-    print(f'Package {installed_pkg_name} depends on:\n  {deps_fmt}\n')
+    print(f'Package {installed.package} depends on:\n  {deps_fmt}\n')
 
+    # Filter out dependencies that are required by "extras" we did not install
+    filtered_dependencies = list(filter(
+        lambda d: not d.marker or any(d.marker.evaluate({'extra': ex}) for ex in installed_pkg_extras),
+        dependencies
+    ))
     # Check if a dependency of a previous version is not needed now and remove it
-    dep_names: List[str] = [d.name.lower() for d in dependencies]
+    dep_names: List[str] = [d.name.lower() for d in filtered_dependencies]
     # Types for the loop variables
     index: int
     req: VendoredLibrary
@@ -468,7 +466,7 @@ def run_dependency_checks(installed: VendoredLibrary, dependencies: List[Require
     # Types for the loop variables
     index: int
     dep: Requirement
-    for dep in dependencies:
+    for dep in filtered_dependencies:
         try:
             dep_req_idx = req_names.index(dep.name.lower())
         except ValueError:
@@ -562,6 +560,12 @@ def install(
     working_set = pkg_resources.WorkingSet([str(vendor_dir)])  # Must be a list to work
     installed_pkg: AnyDistribution = working_set.by_key[parsed_package.name.lower()]
 
+    # Extras
+    if not parsed_package.extras.issubset(installed_pkg.extras):
+        print('Invalid extras detected, they will be removed.')
+        print(f'Not all members of {parsed_package.extras} are in {installed_pkg.extras}')
+    extras = list(parsed_package.extras.intersection(installed_pkg.extras))
+
     # Modules
     modules = get_modules(vendor_dir, installed_pkg, parsed_package)
 
@@ -571,6 +575,7 @@ def install(
     result = VendoredLibrary(
         folder=[vendor_dir.name],
         name=installed_pkg.project_name,
+        extras=extras,
         version=version,
         modules=modules,
         git=is_git,

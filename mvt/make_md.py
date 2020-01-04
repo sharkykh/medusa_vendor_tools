@@ -27,10 +27,10 @@ def make_list_item(req: VendoredLibrary, packages_pattern: Pattern[AnyStr]):
         folder = f'**{folder}**'
 
     # Package
-    package = f'`{req.name}`'
-    mod_file_in_pkg = req.is_main_module_file and req.main_module[:-3] == req.name
+    package = f'`{req.package}`'
+    mod_file_in_pkg = req.is_main_module_file and req.main_module[:-3] == req.name and not req.extras
     if mod_file_in_pkg:
-        package = f'<code><b>{req.name}</b>.py</code>'
+        package = f'<code><b>{req.package}</b>.py</code>'
     if req.modules[1:]:
         if not mod_file_in_pkg:
             package = f'**{package}**'

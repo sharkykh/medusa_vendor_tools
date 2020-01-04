@@ -11,6 +11,7 @@ class VendoredLibrary:
     """Represents a vendored library."""
     folder: List[str]
     name: str
+    extras: List[str]
     version: str
     modules: List[str]
     git: bool
@@ -25,6 +26,7 @@ class VendoredLibrary:
         return OrderedDict([
             ('folder', self.folder),
             ('name', self.name),
+            ('extras', self.extras),
             ('version', self.version),
             ('modules', self.modules),
             ('git', self.git),
@@ -34,6 +36,11 @@ class VendoredLibrary:
             ('notes', self.notes),
         ])
 
+    @property
+    def package(self):
+        extras = ','.join(self.extras)
+        return self.name + (f'[{extras}]' if extras else '')
+
     def as_requirement(self):
         if self.git:
             if 'github.com' in self.url:
@@ -42,9 +49,9 @@ class VendoredLibrary:
                 git_url = git_url.replace('https://github.com/', 'https://codeload.github.com/')
             else:
                 git_url = 'git+' + self.GIT_REPLACE_PATTERN.sub('.git@', self.url)
-            return f'{self.name} @ {git_url}#egg={self.name}{self.markers}'
+            return f'{self.package} @ {git_url}#egg={self.name}{self.markers}'
         else:
-            return f'{self.name}=={self.version}{self.markers}'
+            return f'{self.package}=={self.version}{self.markers}'
 
     def as_update_requirement(self):
         if self.git:
@@ -52,11 +59,11 @@ class VendoredLibrary:
                 # https://github.com/:org/:repo/archive/:commit-ish.tar.gz
                 git_url = self.GIT_REPLACE_PATTERN.sub('/archive/', self.url) + '.tar.gz'
                 git_url = git_url.replace(self.version, self.branch or 'HEAD')
-                return f'{self.name} @ {git_url}#egg={self.name}'
+                return f'{self.package} @ {git_url}#egg={self.name}'
             else:
                 raise ValueError('Only github.com is supported currently.')
         else:
-            return f'{self.name}'
+            return f'{self.package}'
 
     @property
     def markers(self):

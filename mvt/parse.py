@@ -13,7 +13,14 @@ from .models import VendoredLibrary
 
 # Strip code tags to make line pattern simpler, and remove line breaks
 STRIP_PATTERN = re.compile(r'</?code>|`|\n$', re.IGNORECASE)
-PACKAGE_PATTERN = re.compile(r'(?:<b>|\*\*)?([\w.-]+)(?:</b>|\*\*)?(.*)', re.IGNORECASE)
+PACKAGE_PATTERN = re.compile(
+    r'(?:<b>|\*\*)?'
+    r'(?P<name>[\w.-]+)'
+    r'(?:\[(?P<extras>[\w.,-]+)\])?'
+    r'(?:</b>|\*\*)?'
+    r'(?P<extra_modules>.*)',
+    re.IGNORECASE
+)
 VERSION_PATTERN = re.compile(
     r'(?:\w+/)?'
     r'\[(?:'
@@ -91,13 +98,16 @@ def parse_requirements(md_path: Path) -> Iterator[ Union[ Tuple[VendoredLibrary,
         else:
             usage = []
 
-        # Package Name / Extra Modules
+        # Split package to: Name, Extras, Extra Modules
         package_simple = STRIP_PATTERN.sub('', package)
         match = PACKAGE_PATTERN.match(package_simple)
         if not match:
             yield None, LineParseError(line, line_no, package, 'package')
             continue
-        name, extra_modules = match.groups()
+        name, extras, extra_modules = match.groups()
+
+        # Extras
+        extras = extras.split(',') if extras else []
 
         # Version
         match = VERSION_PATTERN.match(version)
@@ -135,6 +145,7 @@ def parse_requirements(md_path: Path) -> Iterator[ Union[ Tuple[VendoredLibrary,
         result = VendoredLibrary(
             folder=folder,
             name=name,
+            extras=extras,
             version=version,
             modules=modules,
             git=bool(git),
