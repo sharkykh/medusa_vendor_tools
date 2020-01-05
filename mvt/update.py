@@ -28,7 +28,7 @@ def update(listfile: Union[Path, str], package: str, cmd: bool) -> None:
             print(str(error), file=sys.stderr)
             continue
 
-        if req.package.lower() == package_lower:
+        if req.name.lower() == package_lower:
             break
     else:
         print(f'Package `{package}` not found.')

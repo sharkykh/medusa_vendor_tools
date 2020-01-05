@@ -40,7 +40,7 @@ def outdated(listfile: Union[Path, str], packages: List[str]) -> None:
     req: Optional[VendoredLibrary]
     error: Optional[parse.LineParseError]
     for req, error in generator:
-        if packages and req.package.lower() not in packages_lower:
+        if packages and req.name.lower() not in packages_lower:
             continue
 
         if error:
@@ -52,13 +52,13 @@ def outdated(listfile: Union[Path, str], packages: List[str]) -> None:
         latest = None
 
         if req.git and req.url.startswith('https://github.com'):
-            print(f'{req.package}: Checking GitHub...', end=' ')
+            print(f'{req.name}: Checking GitHub...', end=' ')
             latest = find_latest_github(req)
         elif req.url.startswith('https://pypi.org'):
-            print(f'{req.package}: Checking PyPI...', end=' ')
+            print(f'{req.name}: Checking PyPI...', end=' ')
             latest = find_latest_pypi(req)
         else:
-            print(f'{req.package}: Unknown origin, skipping')
+            print(f'{req.name}: Unknown origin, skipping')
             wait = False
 
         if latest and latest != current:
@@ -70,7 +70,7 @@ def outdated(listfile: Union[Path, str], packages: List[str]) -> None:
             time.sleep(0.3)
 
 def find_latest_pypi(req: VendoredLibrary) -> str:
-    response = session.get(f'https://pypi.org/pypi/{req.package.lower()}/json')
+    response = session.get(f'https://pypi.org/pypi/{req.name.lower()}/json')
     response.raise_for_status()
     data = response.json()
 

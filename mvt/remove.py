@@ -31,9 +31,9 @@ def remove(listfile: str, package: str) -> None:
 
     req: VendoredLibrary = requirements[req_idx]
     target = listpath.parent.name  # `ext` or `lib`
-    name_lower = req.package.lower()
+    name_lower = req.name.lower()
 
-    print(f'Starting removal of `{req.package}`')
+    print(f'Starting removal of `{req.name}`')
 
     requirements.pop(req_idx)
 
@@ -52,11 +52,11 @@ def remove(listfile: str, package: str) -> None:
             continue
 
         # Warn about packages using `req`:
-        if req.used_by(r.package):
+        if req.used_by(r.name):
             still_used.append(r)
 
-        # if `r` used by `req.package`
-        # remove `req.package` from `r.usage`
+        # if `r` used by `req.name`
+        # remove `req.name` from `r.usage`
         try:
             found = next(
                 i for i, u in enumerate(map(str.lower, r.usage))
@@ -65,7 +65,7 @@ def remove(listfile: str, package: str) -> None:
         except StopIteration:
             continue
 
-        print(f'Removing `{req.package}` usage from dependency `{r.package}`')
+        print(f'Removing `{req.name}` usage from dependency `{r.name}`')
         r.usage.pop(found)
 
         if len(r.usage) == 0:
@@ -74,9 +74,9 @@ def remove(listfile: str, package: str) -> None:
 
     # Display warnings
     for r in still_used:
-        print(f'Warning: `{req.package}` possibly still being used by `{r.package}`')
+        print(f'Warning: `{req.name}` possibly still being used by `{r.name}`')
     for r in unused:
-        print(f'Possibly unused: `{r.package}`, consider removing')
+        print(f'Possibly unused: `{r.name}`, consider removing')
 
     print('\n======================\n')
 
@@ -139,7 +139,7 @@ def load_requirements(listpath: Path, package_name: str) -> (List[VendoredLibrar
             raise error
         requirements.append(req)
 
-        if package_name_lower == req.package.lower():
+        if package_name_lower == req.name.lower():
             req_idx = index
 
     return requirements, req_idx

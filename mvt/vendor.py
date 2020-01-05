@@ -51,15 +51,7 @@ def vendor(listfile: str, package: str, py2: bool, py3: bool, py6: bool) -> None
     parsed_package = parse_input(package)
     package_name: str = parsed_package.name
 
-    print(f'Starting vendor script for: {package_name}{parsed_package.specifier}')
-    if parsed_package.extras:
-        csv_extras = ','.join(parsed_package.extras)
-        print('=' * 60)
-        print(f'You provided a package with extra(s) ({package_name}[{csv_extras}]).')
-        print('Please note that extras can not be expressed on the lists!')
-        print('=' * 60)
-        if input('Press ENTER to continue (to abort - type anything and then press ENTER)'):
-            return
+    print(f'Starting vendor script for: {parsed_package}')
 
     # Get requirements from list, try to find the package we're vendoring right now
     requirements, req_idx = load_requirements(listpath, package_name)
@@ -209,7 +201,7 @@ def load_requirements(listpath: Path, package_name: str) -> (List[VendoredLibrar
             raise error
         requirements.append(req)
 
-        if package_name_lower == req.package.lower():
+        if package_name_lower == req.name.lower():
             req_idx = index
 
     return requirements, req_idx
@@ -442,19 +434,25 @@ def run_dependency_checks(installed: VendoredLibrary, dependencies: List[Require
     print('+ Dependency checks +')
     print('+-------------------+')
 
-    installed_pkg_name: str = installed.package
+    installed_pkg_name: str = installed.name
     installed_pkg_lower = installed_pkg_name.lower()
+    installed_pkg_extras = [None] + installed.extras
 
     deps_fmt = '\n  '.join(map(str, dependencies)) or 'no dependencies'
-    print(f'Package {installed_pkg_name} depends on:\n  {deps_fmt}\n')
+    print(f'Package {installed.package} depends on:\n  {deps_fmt}\n')
 
+    # Filter out dependencies that are required by "extras" we did not install
+    filtered_dependencies = list(filter(
+        lambda d: not d.marker or any(d.marker.evaluate({'extra': ex}) for ex in installed_pkg_extras),
+        dependencies
+    ))
     # Check if a dependency of a previous version is not needed now and remove it
-    dep_names: List[str] = [d.name.lower() for d in dependencies]
+    dep_names: List[str] = [d.name.lower() for d in filtered_dependencies]
     # Types for the loop variables
     index: int
     req: VendoredLibrary
     for idx, req in enumerate(requirements):
-        req_name = req.package
+        req_name = req.name
         usage_lower = list(map(str.lower, req.usage))
 
         if installed_pkg_lower in usage_lower and req_name.lower() not in dep_names:
@@ -464,11 +462,11 @@ def run_dependency_checks(installed: VendoredLibrary, dependencies: List[Require
 
     # Check that the dependencies are installed (partial),
     #   and that their versions match the new specifier (also partial)
-    req_names: List[str] = [r.package.lower() for r in requirements]
+    req_names: List[str] = [r.name.lower() for r in requirements]
     # Types for the loop variables
     index: int
     dep: Requirement
-    for dep in dependencies:
+    for dep in filtered_dependencies:
         try:
             dep_req_idx = req_names.index(dep.name.lower())
         except ValueError:
@@ -481,7 +479,7 @@ def run_dependency_checks(installed: VendoredLibrary, dependencies: List[Require
             continue
 
         dep_req = requirements[dep_req_idx]
-        dep_req_name = dep_req.package
+        dep_req_name = dep_req.name
         dep_req_ver = dep_req.version
         if dep_req_ver not in dep.specifier:
             if dep_req.git:
@@ -569,6 +567,12 @@ def install(
             raise InstallFailed(f'Unable to grab installed package info. WorkingSet: {all_installed}')
         installed_pkg: AnyDistribution = all_installed[0]
 
+    # Extras
+    if not parsed_package.extras.issubset(installed_pkg.extras):
+        print('Invalid extras detected, they will be removed.')
+        print(f'Not all members of {parsed_package.extras} are in {installed_pkg.extras}')
+    extras = list(parsed_package.extras.intersection(installed_pkg.extras))
+
     # Modules
     modules = get_modules(vendor_dir, installed_pkg, parsed_package)
 
@@ -577,7 +581,8 @@ def install(
 
     result = VendoredLibrary(
         folder=[vendor_dir.name],
-        package=installed_pkg.project_name,
+        name=installed_pkg.project_name,
+        extras=extras,
         version=version,
         modules=modules,
         git=is_git,
