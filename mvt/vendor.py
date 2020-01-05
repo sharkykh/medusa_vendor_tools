@@ -560,7 +560,14 @@ def install(
 
     # Get installed package
     working_set = pkg_resources.WorkingSet([str(vendor_dir)])  # Must be a list to work
-    installed_pkg: AnyDistribution = working_set.by_key[parsed_package.name.lower()]
+    try:
+        installed_pkg: AnyDistribution = working_set.by_key[parsed_package.name.lower()]
+    except KeyError:
+        # Unable to find installed package by the package name provided for installing
+        all_installed = list(working_set)
+        if len(all_installed) != 1:
+            raise InstallFailed(f'Unable to grab installed package info. WorkingSet: {all_installed}')
+        installed_pkg: AnyDistribution = all_installed[0]
 
     # Modules
     modules = get_modules(vendor_dir, installed_pkg, parsed_package)
