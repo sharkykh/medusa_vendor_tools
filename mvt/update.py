@@ -34,6 +34,10 @@ def update(listfile: Union[Path, str], package: str, cmd: bool) -> None:
         print(f'Package `{package}` not found.')
         return
 
+    if not req.updatable:
+        print(f'Package `{package}` found, but can not be updated.')
+        return
+
     requirement = req.as_update_requirement()
     req_str = f'"{requirement}"' if ' ' in requirement else requirement
 
