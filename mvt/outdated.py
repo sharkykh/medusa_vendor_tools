@@ -18,7 +18,7 @@ from . import (
 )
 from .models import VendoredLibrary
 
-GITHUB_URL_PATTERN = re.compile(r'github.com/(?P<slug>.+?/.+?)/', re.IGNORECASE)
+GITHUB_URL_PATTERN = re.compile(r'github\.com/(?P<slug>.+?/.+?)/', re.IGNORECASE)
 session = requests.Session()
 session.headers.update({
     'Accept': 'application/json',
