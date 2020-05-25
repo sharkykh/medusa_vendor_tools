@@ -574,7 +574,7 @@ def install(
     extras = list(parsed_package.extras.intersection(installed_pkg.extras))
 
     # Modules
-    modules = get_modules(vendor_dir, installed_pkg, parsed_package)
+    modules = get_modules(vendor_dir, installed_pkg)
 
     # Update version and url
     version, url, is_git, branch = get_version_and_url(installed_pkg, parsed_package, source_commit_hash)
@@ -600,7 +600,7 @@ class InstallFailed(Exception):
     pass
 
 
-def get_modules(vendor_dir: Path, installed_pkg: AnyDistribution, parsed_package: Requirement) -> List[str]:
+def get_modules(vendor_dir: Path, installed_pkg: AnyDistribution) -> List[str]:
     """Get a list of all the top-level modules/files names, with the "main" module being the first."""
     using: str = None
     checklist: List[str] = [
