@@ -49,7 +49,7 @@ class VendoredLibrary:
                 git_url = git_url.replace('https://github.com/', 'https://codeload.github.com/')
             else:
                 git_url = 'git+' + self.GIT_REPLACE_PATTERN.sub('.git@', self.url)
-            return f'{self.package} @ {git_url}#egg={self.name}{self.markers}'
+            return f'{self.package} @ {git_url}{self.markers}'
         else:
             return f'{self.package}=={self.version}{self.markers}'
 
@@ -59,7 +59,7 @@ class VendoredLibrary:
                 # https://github.com/:org/:repo/archive/:commit-ish.tar.gz
                 git_url = self.GIT_REPLACE_PATTERN.sub('/archive/', self.url) + '.tar.gz'
                 git_url = git_url.replace(self.version, self.branch or 'HEAD')
-                return f'{self.package} @ {git_url}#egg={self.name}'
+                return f'{self.package} @ {git_url}'
             else:
                 raise ValueError('Only github.com is supported currently.')
         else:
