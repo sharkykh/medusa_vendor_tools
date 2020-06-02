@@ -447,10 +447,12 @@ def run_dependency_checks(
     deps_fmt = '\n  '.join(map(str, dependencies)) or 'no dependencies'
     print(f'Package {installed.package} depends on:\n  {deps_fmt}\n')
 
-    if dependents and 'medusa' in dependents and not installed.used_by_medusa:
-        print(f'Adding `medusa` to the "usage" column of `{installed.name}`')
-        installed.usage.append('medusa')
-        dependents.remove('medusa')
+    dependents_lower = list(map(str.lower, dependents))
+
+    def remove_dependent(name):
+        i = dependents_lower.index(name)
+        dependents_lower.pop(i)
+        dependents.pop(i)
 
     # Filter out dependencies that are required by "extras" we did not install
     filtered_dependencies = list(filter(
@@ -460,17 +462,17 @@ def run_dependency_checks(
     # Check if a dependency of a previous version is not needed now and remove it
     dep_names: List[str] = [d.name.lower() for d in filtered_dependencies]
     # Types for the loop variables
-    index: int
+    idx: int
     req: VendoredLibrary
     for idx, req in enumerate(requirements):
         req_lower = req.name.lower()
         usage_lower = list(map(str.lower, req.usage))
 
         # Does this library use the installed package?
-        if dependents and req_lower in dependents and not installed.used_by(req_lower):
+        if dependents_lower and req_lower in dependents_lower and not installed.used_by(req_lower):
             print(f'Adding `{req.name}` to the "usage" column of `{installed.name}`')
             installed.usage.append(req.name)
-            dependents.remove(req_lower)
+            remove_dependent(req_lower)
 
         if installed_pkg_lower in usage_lower and req_lower not in dep_names:
             idx = usage_lower.index(installed_pkg_lower)
@@ -481,7 +483,6 @@ def run_dependency_checks(
     #   and that their versions match the new specifier (also partial)
     req_names: List[str] = [r.name.lower() for r in requirements]
     # Types for the loop variables
-    index: int
     dep: Requirement
     for dep in filtered_dependencies:
         try:
@@ -512,6 +513,16 @@ def run_dependency_checks(
                 dep_req.usage.remove('<UPDATE-ME>')
             if '<UNUSED>' in dep_req.usage:
                 dep_req.usage.remove('<UNUSED>')
+
+    # Add remaning dependents
+    for d in dependents:
+        d_lower = d.lower()
+        if d_lower == 'medusa':
+            d = 'medusa'
+        if not installed.used_by(d_lower):
+            print(f'Adding `{d}` to the "usage" column of `{installed.name}`')
+            installed.usage.append(d)
+            remove_dependent(d)
 
     print('+++++++++++++++++++++')
 
