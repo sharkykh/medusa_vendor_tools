@@ -47,7 +47,9 @@ mvt <command> [-h | <arguments>]
 #### [`mvt vendor`](/mvt/vendor.py)
 Vendor (or update existing) libraries.
 ```
-usage: mvt vendor [-h] [-2] [-3] [-6] [-f LISTFILE] package
+usage: mvt vendor [-h] [-2] [-3] [-6] [-u [package [package ...]]]
+                  [-f LISTFILE]
+                  package
 
 positional arguments:
   package               Package to vendor
@@ -57,6 +59,9 @@ optional arguments:
   -2, --py2             Force install Python 2 version to [target]2
   -3, --py3             Force install Python 3 version to [target]3
   -6, --py6             Force install Python 3 version to [target]
+  -u [package [package ...]], --usage [package [package ...]]
+                        Packages that use this library (to add to the usage
+                        column)
   -f LISTFILE, --listfile LISTFILE
                         List file to update (affects target folders). Defaults
                         to `ext/readme.md`

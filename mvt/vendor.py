@@ -43,7 +43,7 @@ GITHUB_URL_PATTERN: Pattern = re.compile(r'github\.com/(?P<slug>.+?/.+?)/[^/]+?/
 
 
 # Main method
-def vendor(listfile: str, package: str, py2: bool, py3: bool, py6: bool) -> None:
+def vendor(listfile: str, package: str, dependents: List[str], py2: bool, py3: bool, py6: bool) -> None:
     listpath = Path(listfile).resolve()
     root = listpath.parent.parent
 
@@ -131,11 +131,12 @@ def vendor(listfile: str, package: str, py2: bool, py3: bool, py6: bool) -> None
     if req:
         installed.usage = req.usage
         installed.notes += req.notes
-    else:
-        installed.usage = ['<UPDATE-ME>']
 
     # Dependency checks
-    run_dependency_checks(installed, dependencies, requirements)
+    run_dependency_checks(installed, dependencies, dependents, requirements)
+
+    if not installed.usage:
+        installed.usage = ['<UPDATE-ME>']
 
     readme_name = '/'.join(listpath.parts[-2:])
     print(f'Updating {readme_name}')
@@ -421,12 +422,18 @@ def make_list_of_folders(target: str, py2: bool, py3: bool, py6: bool) -> List[s
     return install_folders
 
 
-def run_dependency_checks(installed: VendoredLibrary, dependencies: List[Requirement], requirements: List[VendoredLibrary]) -> None:
+def run_dependency_checks(
+    installed: VendoredLibrary,
+    dependencies: List[Requirement],
+    dependents: List[str],
+    requirements: List[VendoredLibrary]
+) -> None:
     """
     Run dependency checks.
     - Check if a dependency of a previous version is not needed now and remove it
     - Check that the dependencies are installed (partial),
         and that their versions match the new specifier (also partial)
+    - Set usage for installed library, if provided.
 
     Note: May mutate items of `requirements`.
     """
@@ -439,6 +446,11 @@ def run_dependency_checks(installed: VendoredLibrary, dependencies: List[Require
 
     deps_fmt = '\n  '.join(map(str, dependencies)) or 'no dependencies'
     print(f'Package {installed.package} depends on:\n  {deps_fmt}\n')
+
+    if dependents and 'medusa' in dependents and not installed.used_by_medusa:
+        print(f'Adding `medusa` to the "usage" column of `{installed.name}`')
+        installed.usage.append('medusa')
+        dependents.remove('medusa')
 
     # Filter out dependencies that are required by "extras" we did not install
     filtered_dependencies = list(filter(
@@ -453,6 +465,12 @@ def run_dependency_checks(installed: VendoredLibrary, dependencies: List[Require
     for idx, req in enumerate(requirements):
         req_lower = req.name.lower()
         usage_lower = list(map(str.lower, req.usage))
+
+        # Does this library use the installed package?
+        if dependents and req_lower in dependents and not installed.used_by(req_lower):
+            print(f'Adding `{req.name}` to the "usage" column of `{installed.name}`')
+            installed.usage.append(req.name)
+            dependents.remove(req_lower)
 
         if installed_pkg_lower in usage_lower and req_lower not in dep_names:
             idx = usage_lower.index(installed_pkg_lower)
