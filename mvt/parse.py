@@ -111,10 +111,13 @@ def parse_requirements(md_path: Path) -> Iterator[ Union[ Tuple[VendoredLibrary,
 
         # Version
         match = VERSION_PATTERN.match(version)
-        if not match:
+        if version == '-':
+            branch, git, version, url = None, None, None, None
+        elif match:
+            branch, git, version, url = match.groups()
+        else:
             yield None, LineParseError(line, line_no, version, 'version')
             continue
-        branch, git, version, url = match.groups()
 
         if git and not version:
             match = URL_COMMIT_PATTERN.search(url)

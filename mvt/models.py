@@ -96,3 +96,13 @@ class VendoredLibrary:
             (name_lower in u) if ' ' in u else (name_lower == u)
             for u in map(str.lower, self.usage)
         )
+
+    @property
+    def updatable(self):
+        if self.git:
+            if not self.url:
+                return False
+            if '/blob/' in self.url:
+                return False
+
+        return True

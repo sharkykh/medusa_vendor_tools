@@ -74,7 +74,7 @@ def make_list_item(req: VendoredLibrary, packages_pattern: Pattern[AnyStr]):
     # Notes
     notes = []
     if not mod_file_in_pkg:
-        if req.is_main_module_file and req.main_module[:-3] != req.name:
+        if req.is_main_module_file and req.name not in (req.main_module[:-3], req.main_module):
             notes.append(f'File: `{req.main_module}`')
         elif req.main_module != req.name:
             notes.append(f'Module: `{req.main_module}`')
