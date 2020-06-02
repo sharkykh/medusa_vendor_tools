@@ -2,14 +2,17 @@
 """Helper functions to generate vendor readme.md files from JSON spec."""
 import json
 import re
+import sys
 from pathlib import Path
 from typing import (
     AnyStr,
     List,
     Mapping,
+    Optional,
     Pattern,
 )
 
+from . import parse
 from .models import VendoredLibrary
 
 
@@ -116,10 +119,15 @@ def make_md(requirements: List[VendoredLibrary]):
 
 def main(infile: str, outfile: str):
     inpath = Path(infile)
-    with inpath.open('r', encoding='utf-8') as fh:
-        original = json.load(fh)
 
-    requirements: List[VendoredLibrary] = [VendoredLibrary(**req) for req in original]
+    if inpath.suffix == '.md':
+        requirements: List[VendoredLibrary] = [req for req, error in parse.parse_requirements(inpath)]
+    else:
+        with inpath.open('r', encoding='utf-8') as fh:
+            original = json.load(fh)
+
+        requirements: List[VendoredLibrary] = [VendoredLibrary(**req) for req in original]
+
     data = make_md(requirements)
 
     outpath = Path(outfile)
