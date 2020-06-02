@@ -514,7 +514,7 @@ def run_dependency_checks(
             if '<UNUSED>' in dep_req.usage:
                 dep_req.usage.remove('<UNUSED>')
 
-    # Add remaning dependents
+    # Add remaining dependents
     for d in dependents:
         d_lower = d.lower()
         if d_lower == 'medusa':
