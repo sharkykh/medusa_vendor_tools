@@ -434,8 +434,7 @@ def run_dependency_checks(installed: VendoredLibrary, dependencies: List[Require
     print('+ Dependency checks +')
     print('+-------------------+')
 
-    installed_pkg_name: str = installed.name
-    installed_pkg_lower = installed_pkg_name.lower()
+    installed_pkg_lower = installed.name.lower()
     installed_pkg_extras = [None] + installed.extras
 
     deps_fmt = '\n  '.join(map(str, dependencies)) or 'no dependencies'
@@ -452,13 +451,13 @@ def run_dependency_checks(installed: VendoredLibrary, dependencies: List[Require
     index: int
     req: VendoredLibrary
     for idx, req in enumerate(requirements):
-        req_name = req.name
+        req_lower = req.name.lower()
         usage_lower = list(map(str.lower, req.usage))
 
-        if installed_pkg_lower in usage_lower and req_name.lower() not in dep_names:
+        if installed_pkg_lower in usage_lower and req_lower not in dep_names:
             idx = usage_lower.index(installed_pkg_lower)
             req.usage.pop(idx)
-            print(f'Removed `{installed_pkg_name}` usage from dependency `{req_name}`')
+            print(f'Removed `{installed.name}` usage from dependency `{req.name}`')
 
     # Check that the dependencies are installed (partial),
     #   and that their versions match the new specifier (also partial)
@@ -483,13 +482,13 @@ def run_dependency_checks(installed: VendoredLibrary, dependencies: List[Require
         dep_req_ver = dep_req.version
         if dep_req_ver not in dep.specifier:
             if dep_req.git:
-                print(f'May need to update {dep_req_name} (git dependency) to match specifier: {dep.specifier}')
+                print(f'May need to update `{dep_req_name}` (git dependency) to match specifier: {dep.specifier}')
             else:
-                print(f'Need to update {dep_req_name} from {dep_req_ver} to match specifier: {dep.specifier}')
+                print(f'Need to update `{dep_req_name}` from {dep_req_ver} to match specifier: {dep.specifier}')
 
         if not dep_req.used_by(installed_pkg_lower):
-            print(f'Adding {installed_pkg_name} to the "usage" column of {dep_req_name}')
-            dep_req.usage.append(installed_pkg_name)
+            print(f'Adding `{installed.name}` to the "usage" column of `{dep_req_name}`')
+            dep_req.usage.append(installed.name)
 
             if '<UPDATE-ME>' in dep_req.usage:
                 dep_req.usage.remove('<UPDATE-ME>')
