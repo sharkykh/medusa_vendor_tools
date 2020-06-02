@@ -21,7 +21,7 @@ def main(args=None):
     vendor_parser.add_argument('-3', '--py3', action='store_true', help='Force install Python 3 version to [target]3')
     vendor_parser.add_argument('-6', '--py6', action='store_true', help='Force install Python 3 version to [target]')
     vendor_parser.add_argument(
-        '-u', '--usage', nargs='*', metavar='package',
+        '-u', '--usage', nargs='*', metavar='package', default=list(),
         help='Packages that use this library (to add to the usage column)'
     )
     vendor_parser.add_argument(
