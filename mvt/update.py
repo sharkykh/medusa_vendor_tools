@@ -60,6 +60,7 @@ def update(listfile: Union[Path, str], package: str, cmd: bool) -> None:
     vendor(
         listfile=str(listfile),
         package=requirement,
+        dependents=[],
         py2=False,
         py3=False,
         py6=False,
