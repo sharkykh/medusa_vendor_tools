@@ -171,7 +171,7 @@ usage: mvt make [-h] [-i INFILE] [-o OUTFILE]
 optional arguments:
   -h, --help            show this help message and exit
   -i INFILE, --infile INFILE
-                        JSON input file. Defaults to `requirements.json`
+                        JSON or Markdown input file. Defaults to `requirements.json`
   -o OUTFILE, --outfile OUTFILE
                         Markdown output file. Defaults to `ext/readme.md`
 ```

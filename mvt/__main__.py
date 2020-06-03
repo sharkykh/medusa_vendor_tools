@@ -98,11 +98,11 @@ def main(args=None):
     sort_parser = subparsers.add_parser('sort', help=sort_help, description=sort_help)
 
     # Command: make
-    make_help = 'Generate `ext/readme.md` from `requirements.json`.'
+    make_help = 'Generate `ext/readme.md` from `requirements.json` or from itself.'
     make_parser = subparsers.add_parser('make', help=make_help, description=make_help)
     make_parser.add_argument(
         '-i', '--infile', default=DEFAULT_REQUIREMENTS_JSON, required=False,
-        help=f'JSON input file. Defaults to `{DEFAULT_REQUIREMENTS_JSON}`'
+        help=f'JSON or Markdown input file. Defaults to `{DEFAULT_REQUIREMENTS_JSON}`'
     )
     make_parser.add_argument(
         '-o', '--outfile', default=DEFAULT_EXT_README, required=False,
