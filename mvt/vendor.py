@@ -220,7 +220,7 @@ def download_source(parsed_package: Requirement, download_target: Path) -> Path:
 
     args: List[str] = [
         sys.executable,
-        '-m', 'pip', 'download', '--no-binary', ':all:', '--no-deps',
+        '-m', 'pip', 'download', '--no-binary', ':all:', '--no-deps', '--no-cache-dir',
         '--dest', str(download_target), str(parsed_package),
     ]
 
