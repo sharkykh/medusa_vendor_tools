@@ -517,13 +517,16 @@ def run_dependency_checks(
 
     # Add remaining dependents
     for d in dependents:
-        d_lower = d.lower()
-        if d_lower == 'medusa':
+        if d.lower() == 'medusa':
             d = 'medusa'
-        if not installed.used_by(d_lower):
+        if not installed.used_by(d):
             print(f'Adding `{d}` to the "usage" column of `{installed.name}`')
             installed.usage.append(d)
             remove_dependent(d)
+
+    usage_sans_placeholders = list(filter(lambda s: s not in ('<UPDATE-ME>', '<UNUSED>'), installed.usage))
+    if usage_sans_placeholders:
+        installed.usage = usage_sans_placeholders
 
     print('+++++++++++++++++++++')
 
