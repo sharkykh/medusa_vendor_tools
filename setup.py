@@ -4,7 +4,7 @@ from mvt import __version__
 
 try:
     from pathlib import Path
-    readme_path = Path(__file__).with_name('README.md')
+    readme_path = Path(__file__).with_name('readme.md')
     long_description = readme_path.read_text()
 except ImportError:
     long_description = None
