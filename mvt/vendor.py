@@ -234,10 +234,10 @@ def download_source(parsed_package: Requirement, download_target: Path, py2: boo
         args += ['--progress-bar', 'off']
 
     print('+++++ [ pip download ] +++++')
-    pip_result = subprocess.call(args)
+    pip_result = subprocess.run(args)
     print('----- [ pip download ] -----')
 
-    if pip_result != 0:
+    if pip_result.returncode != 0:
         raise SourceDownloadFailed('Pip failed')
 
     return next(
@@ -589,10 +589,10 @@ def install(
     major_version = 2 if py2 else 3
 
     print(f'+++++ [ pip | py{major_version} ] +++++')
-    pip_result = subprocess.call(args)
+    pip_result = subprocess.run(args)
     print(f'----- [ pip | py{major_version} ] -----')
 
-    if pip_result != 0:
+    if pip_result.returncode != 0:
         raise InstallFailed('Pip failed')
 
     # Drop the bin directory (contains easy_install, distro, chardetect etc.)
