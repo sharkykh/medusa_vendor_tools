@@ -98,8 +98,8 @@ def make_md(requirements: List[VendoredLibrary]):
 
     # Header
     data.append(f'## {folder}\n')
-    data.append('Folder | Package | Version / Commit | Usage | Notes\n')
-    data.append(':----: | :-----: | :--------------: | :---- | :----\n')
+    data.append('Folder | Package | Version / Commit | Used By | Notes\n')
+    data.append(':----: | :-----: | :--------------: | :------ | :----\n')
 
     # Items
     data += [
