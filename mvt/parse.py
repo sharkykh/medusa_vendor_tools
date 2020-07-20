@@ -23,7 +23,6 @@ VERSION_PATTERN = re.compile(
     r'\((?P<url>[\w.:/-]+)\)',
     re.IGNORECASE
 )
-STRIP_DETAILS_PATTERN = re.compile(r'</?(details|summary)>', re.IGNORECASE)
 URL_COMMIT_PATTERN = re.compile(r'/([a-f0-9]{40})/?', re.IGNORECASE)
 
 
@@ -124,7 +123,6 @@ def parse_requirements(md_path: Path) -> Iterator[ Union[ Tuple[VendoredLibrary,
         modules: List[str] = []
         notes = []
         for note in split_notes:
-            note = re.sub(STRIP_DETAILS_PATTERN, '', note).strip()
             if note.startswith(('File: ', 'Module: ', 'Modules: ')):
                 start = note.index(': ') + 2
                 modules = [

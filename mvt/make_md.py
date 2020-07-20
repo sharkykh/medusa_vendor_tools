@@ -75,9 +75,7 @@ def make_list_item(req: VendoredLibrary, packages_pattern: Pattern[AnyStr]):
 
     # Notes
     notes = []
-    if len(req.modules) > 5:
-        notes.append(f'<details><summary>Modules:</summary> {modules} </details>')
-    elif len(req.modules) > 1:
+    if len(req.modules) > 1:
         notes.append(f'Modules: {modules}')
     elif req.is_main_module_file:
         notes.append(f'File: `{req.main_module}`')
