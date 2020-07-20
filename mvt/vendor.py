@@ -1,5 +1,6 @@
 # coding: utf-8
 """Vendor (or update existing) libraries."""
+import csv
 import os
 import re
 import shutil
@@ -683,25 +684,51 @@ def get_modules(temp_install_dir: Path, installed_pkg: AnyDistribution) -> List[
 
     # Make a simple list of top level directories / file names
     parsed_top_level: List[str] = []
-    for ln in raw_top_level:
-        if using == 'top_level.txt':
+
+    if using == 'top_level.txt':
+        for ln in raw_top_level:
             name = ln
             if (temp_install_dir / (name + '.py')).is_file():
                 name += '.py'
             parsed_top_level.append(name)
-        elif using == 'RECORD':
-            # six-1.12.0.dist-info/top_level.txt,sha256=_iVH_iYEtEXnD8nYGQYpYFUvkUW9sEO1GYbkeKSAais,4
-            # six.py,sha256=h9jch2pS86y4R36pKRS3LOYUCVFNIJMRwjZ4fJDtJ44,32452
-            # setuptools/wheel.py,sha256=94uqXsOaKt91d9hW5z6ZppZmNSs_nO66R4uiwhcr4V0,8094
+    elif using == 'RECORD':
+        # six.py,sha256=h9jch2pS86y4R36pKRS3LOYUCVFNIJMRwjZ4fJDtJ44,32452
+        # setuptools/wheel.py,sha256=94uqXsOaKt91d9hW5z6ZppZmNSs_nO66R4uiwhcr4V0,8094
 
-            # Get the left-most name (directory or file) of the left-most item
-            name = ln.split(',', 1)[0].split('/', 1)[0]
-            if name.endswith(('.dist-info', '.egg-info')):
+        # backports/__init__.py,sha256=elt6uFwbaEv80X8iGWsCJ_w_n_h1X8repgOoNrN0Syg,212
+        # backports/configparser/__init__.py,sha256=thhQqB1qWNKf-F3CpZFYsjC8YT-_I_vF0w4JiuQfiWI,56628
+        namespace_packages: List[str] = []
+        NAMESPACE_PACKAGE_PATTERN = re.compile(r'__path__\s*=.*?extend_path\(__path__, __name__\)')
+
+        for (file_path, _, _) in csv.reader(raw_top_level):
+            file_path: Path = Path(file_path)
+
+            top_level_name: str = file_path.parts[0]
+            package_path = file_path.parent.as_posix()
+            package_path_s = package_path + '/'
+
+            # six-1.12.0.dist-info/top_level.txt,sha256=_iVH_iYEtEXnD8nYGQYpYFUvkUW9sEO1GYbkeKSAais,4
+            if top_level_name.endswith(('.dist-info', '.egg-info')):
                 continue
             # ../../bin/subliminal.exe,sha256=_00-qFoXoJiPYvmGWSVsK5WspavdE6umXt82G980GiA,102763
-            if name == '..':
+            if top_level_name == '..':
                 continue
-            parsed_top_level.append(name)
+
+            inside_namespace = next((True for ns in namespace_packages if package_path_s != ns and package_path_s.startswith(ns)), False)
+            if inside_namespace:
+                # Use the sub-package path as the module
+                parsed_top_level.append(package_path)
+            else:
+                # Is this a namespace package? (`backports`)
+                if bool(
+                    file_path.name == '__init__.py' and
+                    re.search(NAMESPACE_PACKAGE_PATTERN, (temp_install_dir / file_path).read_text())
+                ):
+                    # Mark this package path as a namespace package
+                    namespace_packages.append(package_path_s)
+                else:
+                    # Use the left-most name (directory or file)
+                    parsed_top_level.append(top_level_name)
 
     # Determine the main module and check how the name matches
     top_level: List[str] = []
