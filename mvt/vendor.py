@@ -605,6 +605,9 @@ def install(
             raise InstallFailed(f'Unable to grab installed package info. WorkingSet: {all_installed}')
         installed_pkg: AnyDistribution = all_installed[0]
 
+    # Fix bad packaging. I don't care about 3rd-party tests.
+    drop_dir(temp_install_dir / 'tests', ignore_errors=True)
+
     # Extras
     if not parsed_package.extras.issubset(installed_pkg.extras):
         print('Invalid extras detected, they will be removed.')
@@ -712,6 +715,8 @@ def get_modules(temp_install_dir: Path, installed_pkg: AnyDistribution) -> List[
                 continue
             # ../../bin/subliminal.exe,sha256=_00-qFoXoJiPYvmGWSVsK5WspavdE6umXt82G980GiA,102763
             if top_level_name == '..':
+                continue
+            if top_level_name == 'tests':
                 continue
 
             inside_namespace = next((True for ns in namespace_packages if package_path_s != ns and package_path_s.startswith(ns)), False)
