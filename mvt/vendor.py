@@ -371,7 +371,7 @@ def check_setup_py(package_path: Path, py2: bool, py3: bool) -> dict:
 
     separate_versions = any([
         kwargs_py3.get('use_2to3', False),
-        kwargs_py3.get('package_dir') != kwargs_py2.get('package_dir'),
+        process_any and kwargs_py3.get('package_dir') != kwargs_py2.get('package_dir'),
     ])
     if separate_versions and not all(result['versions'].values()):
         result['versions'] = {'py3': True, 'py2': True}
