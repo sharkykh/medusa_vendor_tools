@@ -682,21 +682,28 @@ def get_modules(vendor_dir: Path, installed_pkg: AnyDistribution) -> List[str]:
 
         cur_path = vendor_dir / name
         real_name = installed_pkg.project_name
-        lower_name = installed_pkg.project_name.lower()
+        lower_name = real_name.lower()
+        stripped_name = lower_name.replace('.', '')
 
         # If a directory:
         #   1. Top level package matches package name
-        #      Example: requests
+        #      Example: `requests`
         #   2. Top level package matches package name, only when it's lowercase
-        #      Example: Mako
+        #      Example: `Mako`
+        #   3. Top level package matches package name with stripped chars (case-insensitive)
+        #      Example: name `bencode.py`, directory `bencodepy`
 
         # If a file:
         #   1. Top level package matches package name
-        #      Example: six[.py]
+        #      Example: name `six`, file `six.py`
         #   2. Top level package matches package name, only when it's lowercase
-        #      Example: name: PackageName, file: packagename.py (it's rare?)
+        #      Example: name `PackageName`, file `packagename.py` (it's rare?)
 
-        if name in (real_name, lower_name) or cur_path.is_file() and name[:-3] in (real_name, lower_name):
+        if (
+            name in (real_name, lower_name) or
+            cur_path.is_file() and name[:-3] in (real_name, lower_name) or
+            name.lower() == stripped_name
+        ):
             top_level.insert(0, name)
         else:
             top_level.append(name)
