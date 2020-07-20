@@ -712,8 +712,9 @@ def get_modules(temp_install_dir: Path, installed_pkg: AnyDistribution) -> List[
         namespace_packages: List[str] = []
         NAMESPACE_PACKAGE_PATTERN = re.compile(r'__path__\s*=.*?extend_path\(__path__, __name__\)')
 
-        for (file_path, _, _) in csv.reader(raw_top_level):
-            file_path: Path = Path(file_path)
+        for (raw_file_path, _, _) in csv.reader(raw_top_level):
+            file_path: Path = Path(raw_file_path)
+            full_file_path: Path = temp_install_dir / file_path
 
             top_level_name: str = file_path.parts[0]
             package_path = file_path.parent.as_posix()
@@ -736,12 +737,13 @@ def get_modules(temp_install_dir: Path, installed_pkg: AnyDistribution) -> List[
                 # Is this a namespace package? (`backports`)
                 if bool(
                     file_path.name == '__init__.py' and
-                    re.search(NAMESPACE_PACKAGE_PATTERN, (temp_install_dir / file_path).read_text())
+                    re.search(NAMESPACE_PACKAGE_PATTERN, full_file_path.read_text())
                 ):
                     # Mark this package path as a namespace package
                     namespace_packages.append(package_path_s)
+                elif full_file_path.is_file():
+                    parsed_top_level.append(raw_file_path)
                 else:
-                    # Use the left-most name (directory or file)
                     parsed_top_level.append(top_level_name)
 
     # Determine the main module and check how the name matches
