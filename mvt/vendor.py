@@ -223,10 +223,15 @@ def download_source(parsed_package: Requirement, download_target: Path, py2: boo
 
     print(f'Downloading source for {parsed_package.name}')
 
-    args: List[str] = executable(py2 and not py3) + [
+    with_py2 = py2 and not py3
+    args: List[str] = executable(with_py2) + [
         '-m', 'pip', '--no-python-version-warning', 'download', '--no-binary', ':all:', '--no-deps', '--no-cache-dir',
         '--dest', str(download_target), str(parsed_package),
     ]
+    if with_py2:
+        # Some versions of Pip for Python 2.7 on Windows can sometimes fail when the progress bar is enabled
+        # See: https://github.com/pypa/pip/issues/5665
+        args += ['--progress-bar', 'off']
 
     print('+++++ [ pip download ] +++++')
     pip_result = subprocess.call(args)
