@@ -211,8 +211,7 @@ def load_requirements(listpath: Path, package_name: str) -> (List[VendoredLibrar
 
 def download_source(parsed_package: Requirement, download_target: Path) -> Path:
     remove_all(download_target.glob('**/*'))
-    if not download_target.is_dir():
-        download_target.mkdir()
+    download_target.mkdir(exist_ok=True)
 
     (download_target / '.gitignore').write_text('*', encoding='utf-8')
 
@@ -716,7 +715,7 @@ def get_version_and_url(
     if is_git:
         match = None
         if parsed_package.url and 'github.com' in parsed_package.url:
-            match = GITHUB_URL_PATTERN.search(parsed_package.url)
+            match = re.search(GITHUB_URL_PATTERN, parsed_package.url)
             url = 'https://github.com/{slug}/tree/{commit}'
 
         if not match:
