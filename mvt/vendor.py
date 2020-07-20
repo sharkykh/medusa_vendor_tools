@@ -89,6 +89,9 @@ def vendor(listfile: str, package: str, dependents: List[str], py2: bool, py3: b
         if not py2 and not py3 and not py6:
             print(f'Package {package_name} found in list, using that')
             install_folders = req.folder
+            py2 = f'{target}2' in install_folders
+            py3 = f'{target}3' in install_folders
+            py6 = len(install_folders) == 1 and target in install_folders
         else:
             print(f'Installing {package_name} to targets according to CLI switches')
             install_folders = None
@@ -101,7 +104,7 @@ def vendor(listfile: str, package: str, dependents: List[str], py2: bool, py3: b
     temp_install_dir: Path = download_target / '__install__'
 
     try:
-        source_archive = download_source(parsed_package, download_target)
+        source_archive = download_source(parsed_package, download_target, py2=py2, py3=py3)
         extracted_source, source_commit_hash = extract_source(source_archive)
         setup_py_results = check_setup_py(extracted_source, py2=py2, py3=py3)
     except InstallFailed as error:
@@ -212,7 +215,7 @@ def load_requirements(listpath: Path, package_name: str) -> (List[VendoredLibrar
     return requirements, req_idx
 
 
-def download_source(parsed_package: Requirement, download_target: Path) -> Path:
+def download_source(parsed_package: Requirement, download_target: Path, py2: bool = False, py3: bool = False) -> Path:
     remove_all(download_target.glob('**/*'))
     download_target.mkdir(exist_ok=True)
 
@@ -220,9 +223,8 @@ def download_source(parsed_package: Requirement, download_target: Path) -> Path:
 
     print(f'Downloading source for {parsed_package.name}')
 
-    args: List[str] = [
-        sys.executable,
-        '-m', 'pip', 'download', '--no-binary', ':all:', '--no-deps', '--no-cache-dir',
+    args: List[str] = executable(py2 and not py3) + [
+        '-m', 'pip', '--no-python-version-warning', 'download', '--no-binary', ':all:', '--no-deps', '--no-cache-dir',
         '--dest', str(download_target), str(parsed_package),
     ]
 
@@ -237,6 +239,15 @@ def download_source(parsed_package: Requirement, download_target: Path) -> Path:
         f for f in download_target.glob('*')
         if f.name not in ('.gitignore', '__install__')
     )
+
+
+def executable(py2: bool) -> List[str]:
+    if py2:
+        # Use "Python Launcher for Windows" (available since Python 3.3)
+        return ['py', '-2.7']
+
+    # Use currently running Python version (3.7+)
+    return [sys.executable]
 
 
 class SourceDownloadFailed(Exception):
@@ -561,15 +572,8 @@ def install(
     # Create the temp install folder
     temp_install_dir.mkdir(exist_ok=True)
 
-    if py2:
-        # Use "Python Launcher for Windows" (available since Python 3.3)
-        executable = ['py', '-2.7']
-    else:
-        # Use currently running Python version (3.7+)
-        executable = [sys.executable]
-
-    args: List[str] = executable + [
-        '-m', 'pip', 'install', '--no-compile', '--no-deps',
+    args: List[str] = executable(py2) + [
+        '-m', 'pip', 'install', '--no-python-version-warning', '--no-compile', '--no-deps',
     ]
     if py2:
         # Some versions of Pip for Python 2.7 on Windows can sometimes fail when the progress bar is enabled
