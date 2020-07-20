@@ -13,14 +13,7 @@ from .models import VendoredLibrary
 
 # Strip code tags to make line pattern simpler, and remove line breaks
 STRIP_PATTERN = re.compile(r'</?code>|`|\n$', re.IGNORECASE)
-PACKAGE_PATTERN = re.compile(
-    r'(?:<b>|\*\*)?'
-    r'(?P<name>[\w.-]+)'
-    r'(?:\[(?P<extras>[\w.,-]+)\])?'
-    r'(?:</b>|\*\*)?'
-    r'(?P<extra_modules>.*)',
-    re.IGNORECASE
-)
+PACKAGE_PATTERN = re.compile(r'`(?P<name>[\w.-]+)(?:\[(?P<extras>[\w.,-]+)\])?`', re.IGNORECASE)
 VERSION_PATTERN = re.compile(
     r'(?:\w+/)?'
     r'\[(?:'
@@ -30,6 +23,7 @@ VERSION_PATTERN = re.compile(
     r'\((?P<url>[\w.:/-]+)\)',
     re.IGNORECASE
 )
+STRIP_DETAILS_PATTERN = re.compile(r'</?(details|summary)>', re.IGNORECASE)
 URL_COMMIT_PATTERN = re.compile(r'/([a-f0-9]{40})/?', re.IGNORECASE)
 
 
@@ -98,13 +92,12 @@ def parse_requirements(md_path: Path) -> Iterator[ Union[ Tuple[VendoredLibrary,
         else:
             usage = []
 
-        # Split package to: Name, Extras, Extra Modules
-        package_simple = STRIP_PATTERN.sub('', package)
-        match = PACKAGE_PATTERN.match(package_simple)
+        # Split package to: Name, Extras
+        match = PACKAGE_PATTERN.match(package)
         if not match:
             yield None, LineParseError(line, line_no, package, 'package')
             continue
-        name, extras, extra_modules = match.groups()
+        name, extras = match.groups()
 
         # Extras
         extras = extras.split(',') if extras else []
@@ -126,24 +119,22 @@ def parse_requirements(md_path: Path) -> Iterator[ Union[ Tuple[VendoredLibrary,
                 continue
             version = match.group(1)
 
-        # Notes
+        # Notes, Modules
         split_notes = notes.split('<br>')
-        module = ''
+        modules: List[str] = []
         notes = []
         for note in split_notes:
-            if note.startswith(('Module: ', 'File: ')):
-                start = note.index(': ') + 3
-                module = note[start:-1]
+            note = re.sub(STRIP_DETAILS_PATTERN, '', note).strip()
+            if note.startswith(('File: ', 'Module: ', 'Modules: ')):
+                start = note.index(': ') + 2
+                modules = [
+                    m.strip('`') for m
+                    in note[start:].split(', ')
+                ]
                 continue
             if note == '-':
                 continue
             notes.append(note)
-
-        extra_modules = extra_modules.split('<br>')
-        first_item = extra_modules.pop(0)  # Could be an empty string
-        if not module and first_item:  # `.py`
-            module = name + first_item
-        modules = [module or name] + extra_modules
 
         result = VendoredLibrary(
             folder=folder,

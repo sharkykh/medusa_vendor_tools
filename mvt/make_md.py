@@ -31,13 +31,6 @@ def make_list_item(req: VendoredLibrary, packages_pattern: Pattern[AnyStr]):
 
     # Package
     package = f'`{req.package}`'
-    mod_file_in_pkg = req.is_main_module_file and req.main_module[:-3] == req.name and not req.extras
-    if mod_file_in_pkg:
-        package = f'<code><b>{req.package}</b>.py</code>'
-    if req.modules[1:]:
-        if not mod_file_in_pkg:
-            package = f'**{package}**'
-        package += '<br>' + '<br>'.join(f'`{m}`' for m in req.modules[1:])
 
     # Version
     if req.version is None:
@@ -74,13 +67,22 @@ def make_list_item(req: VendoredLibrary, packages_pattern: Pattern[AnyStr]):
 
     usage = ', '.join(usage + usage_last)
 
+    # Modules
+    modules = ', '.join(
+        [f'`{req.main_module}`']
+        + [f'`{m}`' for m in req.modules[1:]]
+    )
+
     # Notes
     notes = []
-    if not mod_file_in_pkg:
-        if req.is_main_module_file and req.name not in (req.main_module[:-3], req.main_module):
-            notes.append(f'File: `{req.main_module}`')
-        elif req.main_module != req.name:
-            notes.append(f'Module: `{req.main_module}`')
+    if len(req.modules) > 5:
+        notes.append(f'<details><summary>Modules:</summary> {modules} </details>')
+    elif len(req.modules) > 1:
+        notes.append(f'Modules: {modules}')
+    elif req.is_main_module_file:
+        notes.append(f'File: `{req.main_module}`')
+    else:
+        notes.append(f'Module: `{req.main_module}`')
 
     notes.extend(req.notes)
     notes = '<br>'.join(notes) if notes else '-'
@@ -98,8 +100,8 @@ def make_md(requirements: List[VendoredLibrary]):
 
     # Header
     data.append(f'## {folder}\n')
-    data.append('Folder | Package | Version / Commit | Used By | Notes\n')
-    data.append(':----: | :-----: | :--------------: | :------ | :----\n')
+    data.append('Folder | Package | Version / Commit | Used By | Notes / Modules\n')
+    data.append(':----: | :-----: | :--------------: | :------ | :--------------\n')
 
     # Items
     data += [
