@@ -97,6 +97,7 @@ def vendor(listfile: str, package: str, dependents: List[str], py2: bool, py3: b
 
     # Download source code (removed later)
     download_target: Path = root / '.mvt-temp'
+    temp_install_dir: Path = download_target / '__install__'
 
     try:
         source_archive = download_source(parsed_package, download_target)
@@ -116,6 +117,7 @@ def vendor(listfile: str, package: str, dependents: List[str], py2: bool, py3: b
     for folder in install_folders:
         installed = install(
             vendor_dir=root / folder,
+            temp_install_dir=temp_install_dir,
             source_dir=extracted_source,
             source_commit_hash=source_commit_hash,
             parsed_package=parsed_package,
@@ -232,7 +234,7 @@ def download_source(parsed_package: Requirement, download_target: Path) -> Path:
 
     return next(
         f for f in download_target.glob('*')
-        if f.name != '.gitignore'
+        if f.name not in ('.gitignore', '__install__')
     )
 
 
@@ -546,6 +548,7 @@ def remove_all(paths: List[Path]) -> None:
 
 def install(
     vendor_dir: Path,
+    temp_install_dir: Path,
     source_dir: Path,
     source_commit_hash: Optional[str],
     parsed_package: Requirement,
@@ -553,6 +556,9 @@ def install(
 ) -> VendoredLibrary:
     """Install package from `source_dir` into `vendor_dir` using pip, and return a vendored package object and a list of dependencies."""
     print(f'Installing vendored library `{parsed_package.name}` to `{vendor_dir.name}`')
+
+    # Create the temp install folder
+    temp_install_dir.mkdir(exist_ok=True)
 
     if py2:
         # Use "Python Launcher for Windows" (available since Python 3.3)
@@ -562,13 +568,13 @@ def install(
         executable = [sys.executable]
 
     args: List[str] = executable + [
-        '-m', 'pip', 'install', '--no-compile', '--no-deps', '--upgrade',
+        '-m', 'pip', 'install', '--no-compile', '--no-deps',
     ]
     if py2:
         # Some versions of Pip for Python 2.7 on Windows can sometimes fail when the progress bar is enabled
         # See: https://github.com/pypa/pip/issues/5665
         args += ['--progress-bar', 'off']
-    args += ['--target', str(vendor_dir), str(source_dir)]
+    args += ['--target', str(temp_install_dir), str(source_dir)]
 
     major_version = 2 if py2 else 3
 
@@ -581,14 +587,14 @@ def install(
 
     # Drop the bin directory (contains easy_install, distro, chardetect etc.)
     # Might not appear on all OSes, so ignoring errors
-    drop_dir(vendor_dir / 'bin', ignore_errors=True)
+    drop_dir(temp_install_dir / 'bin', ignore_errors=True)
 
     # Drop interpreter and OS specific files.
-    remove_all(vendor_dir.glob('**/*.pyd'))
-    remove_all(vendor_dir.glob('msgpack/*.so'))
+    remove_all(temp_install_dir.glob('**/*.pyd'))
+    remove_all(temp_install_dir.glob('msgpack/*.so'))
 
     # Get installed package
-    working_set = pkg_resources.WorkingSet([str(vendor_dir)])  # Must be a list to work
+    working_set = pkg_resources.WorkingSet([str(temp_install_dir)])  # Must be a list to work
     try:
         installed_pkg: AnyDistribution = working_set.by_key[parsed_package.name.lower()]
     except KeyError:
@@ -605,7 +611,7 @@ def install(
     extras = list(parsed_package.extras.intersection(installed_pkg.extras))
 
     # Modules
-    modules = get_modules(vendor_dir, installed_pkg)
+    modules = get_modules(temp_install_dir, installed_pkg)
 
     # Update version and url
     version, url, is_git, branch = get_version_and_url(installed_pkg, parsed_package, source_commit_hash)
@@ -624,6 +630,15 @@ def install(
     # Remove the package info folder
     drop_dir(Path(installed_pkg.egg_info))
 
+    # Move the files to the target vendor folder
+    move_subtrees_r(temp_install_dir, vendor_dir, False)
+
+    # Remove the temp install folder
+    try:
+        temp_install_dir.rmdir()
+    except OSError:
+        pass
+
     return result
 
 
@@ -631,7 +646,22 @@ class InstallFailed(Exception):
     pass
 
 
-def get_modules(vendor_dir: Path, installed_pkg: AnyDistribution) -> List[str]:
+def move_subtrees_r(source: Path, target: Path, use_replace: bool = True):
+    """Recursive tree merge."""
+    path_attr = 'replace' if use_replace else 'rename'
+
+    subtree: Path
+    for subtree in source.glob('*'):
+        target_path = target / subtree.name
+        try:
+            getattr(subtree, path_attr)(target_path)
+        except FileExistsError:
+            move_subtrees_r(subtree, target_path)
+
+    source.rmdir()
+
+
+def get_modules(temp_install_dir: Path, installed_pkg: AnyDistribution) -> List[str]:
     """Get a list of all the top-level modules/files names, with the "main" module being the first."""
     using: str = None
     checklist: List[str] = [
@@ -656,7 +686,7 @@ def get_modules(vendor_dir: Path, installed_pkg: AnyDistribution) -> List[str]:
     for ln in raw_top_level:
         if using == 'top_level.txt':
             name = ln
-            if (vendor_dir / (name + '.py')).is_file():
+            if (temp_install_dir / (name + '.py')).is_file():
                 name += '.py'
             parsed_top_level.append(name)
         elif using == 'RECORD':
@@ -680,7 +710,7 @@ def get_modules(vendor_dir: Path, installed_pkg: AnyDistribution) -> List[str]:
         if name in top_level:
             continue
 
-        cur_path = vendor_dir / name
+        cur_path = temp_install_dir / name
         real_name = installed_pkg.project_name
         lower_name = real_name.lower()
         stripped_name = lower_name.replace('.', '')
