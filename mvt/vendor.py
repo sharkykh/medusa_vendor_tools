@@ -729,6 +729,11 @@ def get_modules(temp_install_dir: Path, installed_pkg: AnyDistribution) -> List[
             if top_level_name == 'tests':
                 continue
 
+            parsed_top_level.append(top_level_name)
+            continue
+
+            # TODO: Namespace package handling needs more work
+
             inside_namespace = next((True for ns in namespace_packages if package_path_s != ns and package_path_s.startswith(ns)), False)
             if inside_namespace:
                 # Use the sub-package path as the module
@@ -741,9 +746,8 @@ def get_modules(temp_install_dir: Path, installed_pkg: AnyDistribution) -> List[
                 ):
                     # Mark this package path as a namespace package
                     namespace_packages.append(package_path_s)
-                elif full_file_path.is_file():
-                    parsed_top_level.append(raw_file_path)
                 else:
+                    # Use the left-most name (directory or file)
                     parsed_top_level.append(top_level_name)
 
     # Determine the main module and check how the name matches
