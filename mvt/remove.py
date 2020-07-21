@@ -9,7 +9,6 @@ from typing import (
 )
 
 from . import parse as parse_md
-from .__main__ import DEFAULT_EXT_README
 from .gen_req import generate_requirements
 from .make_md import make_md
 from .models import VendoredLibrary
