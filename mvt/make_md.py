@@ -31,6 +31,8 @@ def make_list_item(req: VendoredLibrary, packages_pattern: Pattern[AnyStr]):
 
     # Package
     package = f'`{req.package}`'
+    if req.main_module_matches_package_name:
+        package = f'**{package}**'
 
     # Version
     if req.version is None:
@@ -77,10 +79,11 @@ def make_list_item(req: VendoredLibrary, packages_pattern: Pattern[AnyStr]):
     notes = []
     if len(req.modules) > 1:
         notes.append(f'Modules: {modules}')
-    elif req.is_main_module_file:
-        notes.append(f'File: `{req.main_module}`')
-    else:
-        notes.append(f'Module: `{req.main_module}`')
+    elif not req.main_module_matches_package_name:
+        if req.is_main_module_file:
+            notes.append(f'File: `{req.main_module}`')
+        else:
+            notes.append(f'Module: `{req.main_module}`')
 
     notes.extend(req.notes)
     notes = '<br>'.join(notes) if notes else '-'

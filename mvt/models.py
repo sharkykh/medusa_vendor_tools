@@ -82,6 +82,11 @@ class VendoredLibrary:
         return self.modules[0]
 
     @property
+    def main_module_matches_package_name(self):
+        """Is the main module named exactly like `package`?"""
+        return self.main_module == self.package
+
+    @property
     def is_main_module_file(self):
         """Is the main module a file? (*.py)"""
         return self.main_module.endswith('.py')

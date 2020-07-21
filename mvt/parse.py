@@ -13,7 +13,14 @@ from .models import VendoredLibrary
 
 # Strip code tags to make line pattern simpler, and remove line breaks
 STRIP_PATTERN = re.compile(r'</?code>|`|\n$', re.IGNORECASE)
-PACKAGE_PATTERN = re.compile(r'`(?P<name>[\w.-]+)(?:\[(?P<extras>[\w.,-]+)\])?`', re.IGNORECASE)
+PACKAGE_PATTERN = re.compile(
+    r'(?:\*\*)?`'
+    r'(?P<name>[\w.-]+)'
+    r'(?:\[(?P<extras>[\w.,-]+)\])?'
+    r'`(?:\*\*)?',
+    re.IGNORECASE
+)
+
 VERSION_PATTERN = re.compile(
     r'(?:\w+/)?'
     r'\[(?:'
@@ -133,6 +140,10 @@ def parse_requirements(md_path: Path) -> Iterator[ Union[ Tuple[VendoredLibrary,
             if note == '-':
                 continue
             notes.append(note)
+
+        # If modules were not specified,
+        # the main module has the same name as `VendoredLibrary.package`
+        modules = modules or [name]
 
         result = VendoredLibrary(
             folder=folder,
