@@ -1,7 +1,6 @@
 # coding: utf-8
 """Remove vendored library by name."""
 import shutil
-import sys
 from pathlib import Path
 from typing import (
     List,

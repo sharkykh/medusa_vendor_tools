@@ -5,8 +5,8 @@ import re
 from pathlib import Path
 from typing import (
     Iterator,
+    List,
     Tuple,
-    Union,
 )
 
 from .models import VendoredLibrary
@@ -42,7 +42,7 @@ class LineParseError(Exception):
         self.section = section
 
     def __str__(self) -> str:
-        failed_header = 'Failed to parse {0} on line {1}:'.format(self.section or 'line', self.line_no)
+        failed_header = 'Failed to parse {0} on line {1}:'.format(self.section or 'line', self.line_no or '?')
         line_header = 'Full line ({0}):'.format(self.line_no)
 
         width = 36
@@ -65,7 +65,7 @@ class LineParseError(Exception):
         return result
 
 
-def parse_requirements(md_path: Path) -> Iterator[ Union[ Tuple[VendoredLibrary, None], Tuple[None, LineParseError] ] ]:
+def parse_requirements(md_path: Path) -> Iterator[Tuple[VendoredLibrary, LineParseError]]:
     """Yields `(VendoredLibrary, None)` or `(None, LineParseError)`."""
     if not md_path.exists():
         return

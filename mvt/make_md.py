@@ -2,13 +2,10 @@
 """Helper functions to generate vendor readme.md files from JSON spec."""
 import json
 import re
-import sys
 from pathlib import Path
 from typing import (
     AnyStr,
     List,
-    Mapping,
-    Optional,
     Pattern,
 )
 
@@ -98,12 +95,12 @@ def make_md(requirements: List[VendoredLibrary]):
     folder = requirements[0].folder[0].rstrip('23')
     packages_pattern = make_packages_pattern(requirements)
 
-    data = []
-
     # Header
-    data.append(f'## {folder}\n')
-    data.append('Folder | Package | Version / Commit | Used By | Notes / Modules\n')
-    data.append(':----: | :-----: | :--------------: | :------ | :--------------\n')
+    data = [
+        f'## {folder}\n',
+        'Folder | Package | Version / Commit | Used By | Notes / Modules\n',
+        ':----: | :-----: | :--------------: | :------ | :--------------\n',
+    ]
 
     # Items
     data += [
@@ -112,11 +109,13 @@ def make_md(requirements: List[VendoredLibrary]):
     ]
 
     # Footer
-    data.append('\n')
-    data.append('#### Notes:\n')
-    data.append(f'- `{folder}` compatible with Python 2 and Python 3\n')
-    data.append(f'- `{folder}2` only compatible with Python 2\n')
-    data.append(f'- `{folder}3` only compatible with Python 3\n')
+    data += [
+        '\n',
+        '#### Notes:\n',
+        f'- `{folder}` compatible with Python 2 and Python 3\n',
+        f'- `{folder}2` only compatible with Python 2\n',
+        f'- `{folder}3` only compatible with Python 3\n',
+    ]
 
     return data
 

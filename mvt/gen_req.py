@@ -5,10 +5,7 @@ import sys
 from pathlib import Path
 
 from .models import VendoredLibrary
-from .parse import (
-    LineParseError,
-    parse_requirements,
-)
+from .parse import parse_requirements
 
 
 def generate_requirements(infile: str, outfile: str, all_packages: bool = False, json_output: bool = False) -> None:

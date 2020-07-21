@@ -69,6 +69,7 @@ def outdated(listfile: Union[Path, str], packages: List[str]) -> None:
         if wait:
             time.sleep(0.3)
 
+
 def find_latest_pypi(req: VendoredLibrary) -> str:
     response = session.get(f'https://pypi.org/pypi/{req.name.lower()}/json')
     response.raise_for_status()
@@ -76,6 +77,7 @@ def find_latest_pypi(req: VendoredLibrary) -> str:
 
     # Get latest version
     return data['info']['version']
+
 
 def find_latest_github(req: VendoredLibrary) -> str:
     match = GITHUB_URL_PATTERN.search(req.url)

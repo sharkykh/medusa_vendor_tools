@@ -48,7 +48,7 @@ def update(listfile: Union[Path, str], package: str, cmd: bool) -> None:
         if listfile.samefile(DEFAULT_EXT_README):
             print(f'> mvt vendor {req_str}')
         else:
-            listfile_escaped =f'"{listfile_str}"' if ' ' in listfile_str else listfile_str
+            listfile_escaped = f'"{listfile_str}"' if ' ' in listfile_str else listfile_str
             print(f'> mvt vendor -f {listfile_escaped} {req_str}')
         return
 

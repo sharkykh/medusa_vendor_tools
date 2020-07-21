@@ -43,6 +43,7 @@ MIN_PYTHON_3 = '3.5.2'
 # name@https://github.com/:owner/:repo/archive/:commit-ish.tar.gz
 # Can also use `zip` in place of `tar.gz`, `#egg=name` is not needed if using `name @` prefix
 GITHUB_URL_PATTERN: Pattern = re.compile(r'github\.com/(?P<slug>.+?/.+?)/[^/]+?/(?P<commit_ish>.+?)(?:\.tar\.gz|\.zip)?(?:#|$)', re.IGNORECASE)
+NAMESPACE_PACKAGE_PATTERN: Pattern = re.compile(r'__path__\s*=.*?extend_path\(__path__, __name__\)')
 
 
 # Main method
@@ -351,7 +352,7 @@ def compile_extras_require(data: Optional[Mapping[str, List[str]]]) -> List[str]
 
             req.marker = Marker(' and '.join(new_markers))
 
-        extras.append(str(req))
+            extras.append(str(req))
 
     return extras
 
@@ -550,12 +551,12 @@ def run_dependency_checks(
     print('+++++++++++++++++++++')
 
 
-def drop_dir(path: Path, **kwargs) -> None:
+def drop_dir(path: Path, **kwargs):
     """Recursively delete the directory tree at `path`."""
     shutil.rmtree(str(path), **kwargs)
 
 
-def remove_all(paths: List[Path]) -> None:
+def remove_all(paths: Iterable[Path]):
     """Recursively delete every file and directory tree of `paths`."""
     for path in paths:
         if path.is_dir():
@@ -677,22 +678,21 @@ def move_subtrees_r(source: Path, target: Path, use_replace: bool = True):
 
 def get_modules(temp_install_dir: Path, installed_pkg: AnyDistribution) -> List[str]:
     """Get a list of all the top-level modules/files names, with the "main" module being the first."""
-    using: str = None
     checklist: List[str] = [
         # Use RECORD first because it's more reliable
         # (Extensions are picked up by `top_level.txt` - see `PyYAML`)
         'RECORD',
         'top_level.txt',
     ]
-    while using is None and checklist:
+    while checklist:
         checkpath: str = checklist.pop(0)
         try:
             raw_top_level: List[str] = installed_pkg.get_metadata(checkpath).splitlines(keepends=False)
             using = checkpath
+            break
         except IOError:
             pass
-
-    if not using:
+    else:
         raise Exception('Unable to read module info')
 
     # Make a simple list of top level directories / file names
@@ -710,7 +710,6 @@ def get_modules(temp_install_dir: Path, installed_pkg: AnyDistribution) -> List[
 
         # backports/__init__.py,sha256=elt6uFwbaEv80X8iGWsCJ_w_n_h1X8repgOoNrN0Syg,212
         # backports/configparser/__init__.py,sha256=thhQqB1qWNKf-F3CpZFYsjC8YT-_I_vF0w4JiuQfiWI,56628
-        NAMESPACE_PACKAGE_PATTERN = re.compile(r'__path__\s*=.*?extend_path\(__path__, __name__\)')
         namespace_packages: Dict[str, List[PurePosixPath]] = {}
 
         for (raw_path, _, _) in csv.reader(raw_top_level):
@@ -803,6 +802,7 @@ def get_version_and_url(
     is_git = bool(source_commit_hash)
     branch = None
     if is_git:
+        url = ''
         match = None
         if parsed_package.url and 'github.com' in parsed_package.url:
             match = re.search(GITHUB_URL_PATTERN, parsed_package.url)

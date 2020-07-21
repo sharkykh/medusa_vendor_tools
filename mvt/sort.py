@@ -1,6 +1,5 @@
 # coding: utf-8
 """Sort `ext/readme.md` and `lib/readme.md` by package name."""
-import re
 from pathlib import Path
 from typing import (
     List,
@@ -22,7 +21,7 @@ def _sort_key(line: str) -> str:
 
     match: Match = PACKAGE_PATTERN.match(columns[1])
     if not match:
-        raise LineParseError(line_copy, '?', columns[1], 'package')
+        raise LineParseError(line_copy, -1, columns[1], 'package')
     return match.group(1).lower()
 
 
