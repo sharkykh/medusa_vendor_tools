@@ -37,11 +37,11 @@ class VendoredLibrary:
         ])
 
     @property
-    def package(self):
+    def package(self) -> str:
         extras = ','.join(self.extras)
         return self.name + (f'[{extras}]' if extras else '')
 
-    def as_requirement(self):
+    def as_requirement(self) -> str:
         if self.git:
             if 'github.com' in self.url:
                 # https://codeload.github.com/:org/:repo/tar.gz/:commit-ish
@@ -53,7 +53,7 @@ class VendoredLibrary:
         else:
             return f'{self.package}=={self.version}{self.markers}'
 
-    def as_update_requirement(self):
+    def as_update_requirement(self) -> str:
         if self.git:
             if 'github.com' in self.url:
                 # https://github.com/:org/:repo/archive/:commit-ish.tar.gz
@@ -66,7 +66,7 @@ class VendoredLibrary:
             return f'{self.package}'
 
     @property
-    def markers(self):
+    def markers(self) -> str:
         markers = ''
         # Exclusive-OR: Either '<dir>2' or '<dir>3', but not both
         ext = ('ext2' in self.folder) != ('ext3' in self.folder)
@@ -78,24 +78,24 @@ class VendoredLibrary:
         return markers
 
     @property
-    def main_module(self):
+    def main_module(self) -> str:
         return self.modules[0]
 
     @property
-    def main_module_matches_package_name(self):
+    def main_module_matches_package_name(self) -> bool:
         """Is the main module named exactly like `package`?"""
         return self.main_module == self.package
 
     @property
-    def is_main_module_file(self):
+    def is_main_module_file(self) -> bool:
         """Is the main module a file? (*.py)"""
         return self.main_module.endswith('.py')
 
     @property
-    def used_by_medusa(self):
+    def used_by_medusa(self) -> bool:
         return self.used_by('medusa')
 
-    def used_by(self, name):
+    def used_by(self, name: str) -> bool:
         name_lower = name.lower()
         return any(
             (name_lower in u) if ' ' in u else (name_lower == u)
@@ -103,7 +103,7 @@ class VendoredLibrary:
         )
 
     @property
-    def updatable(self):
+    def updatable(self) -> bool:
         if self.git:
             if not self.url:
                 return False
