@@ -50,24 +50,18 @@ def remove(listfile: str, package: str) -> None:
             continue
 
         # Warn about packages using `req`:
-        if req.used_by(r.name):
+        if r in req.usage:
             still_used.append(r)
 
-        # if `r` used by `req.name`
+        # if `r` used by `req`
         # remove `req.name` from `r.usage`
-        try:
-            found = next(
-                i for i, u in enumerate(map(str.lower, r.usage))
-                if ((name_lower in u) if ' ' in u else (name_lower == u))
-            )
-        except StopIteration:
+        if req not in r.usage:
             continue
 
         print(f'Removing `{req.name}` usage from dependency `{r.name}`')
-        r.usage.pop(found)
+        r.usage.remove(req)
 
-        if len(r.usage) == 0:
-            r.usage = ['<UNUSED>']
+        if not r.usage:
             unused.append(r)
 
     # Display warnings

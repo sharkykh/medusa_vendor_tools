@@ -9,14 +9,12 @@ from typing import (
 from .parse import (
     LineParseError,
     PACKAGE_PATTERN,
-    STRIP_PATTERN,
 )
 
 
 def _sort_key(line: str) -> str:
     line_copy = line[:]
     line = line.strip()
-    line = STRIP_PATTERN.sub('', line)
     columns: List[str] = line.split(' | ')
 
     match: Match = PACKAGE_PATTERN.match(columns[1])

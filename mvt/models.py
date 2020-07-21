@@ -3,7 +3,190 @@
 import re
 from collections import OrderedDict
 from dataclasses import dataclass, field
-from typing import List
+from typing import (
+    Dict,
+    Iterator,
+    List,
+    TypeVar,
+    Union,
+)
+
+VendoredLibraryType = TypeVar('VendoredLibraryType', bound='VendoredLibrary')
+UsedByModuleType = TypeVar('UsedByModuleType', bound='UsedByModule')
+UsedByType = TypeVar('UsedByType', bound='UsedBy')
+UsageItemType = Union[VendoredLibraryType, UsedByModuleType, str]
+
+
+class UsedByModule:
+    def __init__(self, raw_module: str):
+        # Examples:
+        #   **`medusa`** (via `beautifulsoup4`)
+        #   `subliminal` (cli only)
+        #   `requests`
+        #   `<UNUSED>`
+        #   `<UPDATE-ME>`
+        # re.sub(r'(?:\*\*)?`(.+?)`(?:\*\*)?(?: (.+))?', '', raw_module)
+        try:
+            name, extra = raw_module.split(' ', 1)
+        except ValueError:
+            name, extra = raw_module, ''
+
+        self.name = name.strip('*`')
+        self.extra = extra
+
+    @classmethod
+    def from_json(cls, data: Union[str, List[str]]) -> UsedByModuleType:
+        try:
+            name, extra = data
+            return cls(name + ' ' + extra)
+        except ValueError:
+            return cls(data)
+
+    def json(self) -> Union[str, List[str]]:
+        if self.extra:
+            return [self.name, self.extra]
+        return self.name
+
+    def __eq__(self, value: str) -> bool:
+        """Case-insensitive name match."""
+        return self.name.lower() == value.lower()
+
+    def match(self, value: str) -> bool:
+        """Normal (case-sensitive) name match."""
+        return self.name == value
+
+    def __str__(self) -> str:
+        name = f'**`{self.name}`**' if self.name == 'medusa' else f'`{self.name}`'
+        if not self.extra:
+            return name
+        return ' '.join((name, self.extra))
+
+
+
+class UsedBy:
+    UPDATE_ME = '<UPDATE-ME>'
+    _UNUSED = '<UNUSED>'
+
+    def __init__(self, raw_used_by: Union[str, List[str]] = ''):
+        # Examples:
+        #   **`medusa`** (via `beautifulsoup4`), `subliminal` (cli only), `requests`
+        #   `<UNUSED>`
+        #   `<UPDATE-ME>`
+        self.modules: Dict[str, UsedByModule] = {}
+
+        if not raw_used_by:
+            return
+
+        def process(items: List[str]):
+            for raw_item in items:
+                item = UsedByModule(raw_item)
+
+                if item.match(self._UNUSED):
+                    self.modules = {}
+                    return
+
+                self.modules[item.name.lower()] = item
+
+        if isinstance(raw_used_by, list):
+            process(raw_used_by)
+        else:
+            process(raw_used_by.split(', '))
+
+    @classmethod
+    def from_json(cls, data: List[Union[str, List[str]]]) -> UsedByType:
+        result = cls()
+
+        for raw_item in data:
+            item = UsedByModule.from_json(raw_item)
+            result.modules[item.name.lower()] = item
+
+        return result
+
+    def json(self) -> List[str]:
+        return [item.json() for item in self.ordered]
+
+    @property
+    def unused(self) -> bool:
+        """Is unused?"""
+        return len(self) == 0
+
+    @property
+    def ordered(self) -> List[UsedByModule]:
+        """Return an ordered list."""
+        result = sorted(self.modules.values(), key=lambda x: x.name.lower())
+
+        usage: List[UsedByModule] = []
+        usage_last: List[UsedByModule] = []
+        for item in result:
+            if item == '?????':
+                usage_last.append(item)
+                continue
+
+            if item == 'medusa':
+                usage.insert(0, item)
+            else:
+                usage.append(item)
+
+        return usage + usage_last
+
+    @staticmethod
+    def _to_key(item: UsageItemType) -> str:
+        if isinstance(item, (VendoredLibrary, UsedByModule)):
+            key = item.name
+        elif isinstance(item, str):
+            key = item
+        else:
+            raise ValueError(f'Unsupported type {item.__class__.__name__}')
+
+        return key.lower()
+
+    def add(self, item: UsageItemType):
+        """Add to usage."""
+        if isinstance(item, UsedByModule):
+            value = item
+        elif isinstance(item, VendoredLibrary):
+            value = UsedByModule(item.name)
+        elif isinstance(item, str):
+            value = UsedByModule(item)
+        else:
+            raise ValueError(f'Unsupported type {item.__class__.__name__}')
+
+        key = value.name.lower()
+
+        if key in self.modules:
+            raise ValueError(f'{value.name} already exists!')
+
+        self.modules[key] = value
+
+    def remove(self, item: UsageItemType, ignore_errors: bool = False):
+        """Remove from usage."""
+        key = self._to_key(item)
+        try:
+            del self.modules[key]
+        except KeyError:
+            if not ignore_errors:
+                raise
+
+    def __contains__(self, item: UsageItemType) -> bool:
+        key = self._to_key(item)
+        return key in self.modules
+
+    def __getitem__(self, item: UsageItemType) -> UsedByModule:
+        key = self._to_key(item)
+        return self.modules[key]
+
+    def __iter__(self) -> Iterator[UsedByModule]:
+        for item in self.ordered:
+            yield item
+
+    def __len__(self) -> int:
+        return len(self.modules)
+
+    def __str__(self) -> str:
+        if self.unused:
+            return f'`{self._UNUSED}`'
+
+        return ', '.join([str(item) for item in self.ordered])
 
 
 @dataclass
@@ -17,7 +200,7 @@ class VendoredLibrary:
     git: bool
     branch: str
     url: str
-    usage: List[str] = field(default_factory=list)
+    usage: UsedBy = field(default_factory=UsedBy)
     notes: List[str] = field(default_factory=list)
 
     GIT_REPLACE_PATTERN = re.compile(r'/(?:tree|commits?)/', re.IGNORECASE)
@@ -32,7 +215,7 @@ class VendoredLibrary:
             ('git', self.git),
             ('branch', self.branch),
             ('url', self.url),
-            ('usage', self.usage),
+            ('usage', self.usage.json()),
             ('notes', self.notes),
         ])
 
@@ -93,14 +276,7 @@ class VendoredLibrary:
 
     @property
     def used_by_medusa(self) -> bool:
-        return self.used_by('medusa')
-
-    def used_by(self, name: str) -> bool:
-        name_lower = name.lower()
-        return any(
-            (name_lower in u) if ' ' in u else (name_lower == u)
-            for u in map(str.lower, self.usage)
-        )
+        return 'medusa' in self.usage
 
     @property
     def updatable(self) -> bool:

@@ -9,10 +9,8 @@ from typing import (
     Tuple,
 )
 
-from .models import VendoredLibrary
+from .models import UsedBy, VendoredLibrary
 
-# Strip code tags to make line pattern simpler, and remove line breaks
-STRIP_PATTERN = re.compile(r'</?code>|`|\n$', re.IGNORECASE)
 PACKAGE_PATTERN = re.compile(
     r'(?:\*\*)?`'
     r'(?P<name>[\w.-]+)'
@@ -92,11 +90,7 @@ def parse_requirements(md_path: Path) -> Iterator[Tuple[VendoredLibrary, LinePar
         folder = folder.strip(' *').split(' ')
 
         # Usage
-        if usage:
-            usage = STRIP_PATTERN.sub('', usage)
-            usage = [pkg.replace('**', '') for pkg in usage.split(', ')]
-        else:
-            usage = []
+        usage = UsedBy(usage)
 
         # Split package to: Name, Extras
         match = PACKAGE_PATTERN.match(package)

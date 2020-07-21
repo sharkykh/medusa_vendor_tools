@@ -1,25 +1,18 @@
 # coding: utf-8
 """Helper functions to generate vendor readme.md files from JSON spec."""
 import json
-import re
 from pathlib import Path
-from typing import (
-    AnyStr,
-    List,
-    Pattern,
-)
+from typing import List
 
 from . import parse
 from .__main__ import DEFAULT_EXT_README
-from .models import VendoredLibrary
+from .models import (
+    UsedBy,
+    VendoredLibrary,
+)
 
 
-def make_packages_pattern(requirements: List[VendoredLibrary]) -> Pattern[AnyStr]:
-    packages = map(lambda r: re.escape(r.name), requirements)
-    return re.compile('(?<!`)(\b)?(' + '|'.join(packages) + ')(\b)?(?!`)')
-
-
-def make_list_item(req: VendoredLibrary, packages_pattern: Pattern[AnyStr]):
+def make_list_item(req: VendoredLibrary):
     # Folder
     ext = ('ext2' in req.folder) or ('ext3' in req.folder)
     lib = ('lib2' in req.folder) or ('lib3' in req.folder)
@@ -44,28 +37,7 @@ def make_list_item(req: VendoredLibrary, packages_pattern: Pattern[AnyStr]):
             version = f'pymedusa/{version}'
 
     # Usage
-    usage = []
-    usage_last = []
-    for i, u in enumerate(sorted(req.usage, key=str.lower)):
-        if '?????' in u:
-            usage_last.append(u)
-            continue
-        if ' ' in u:
-            parts = u.split(' ', 1)
-            wrapped = packages_pattern.sub(r'\1`\2`\3', parts[1])
-            t = '**`{name}`** {extra}' if parts[0] == 'medusa' else '`{name}` {extra}'
-            r = t.format(name=parts[0], extra=wrapped)
-        else:
-            t = '**`{name}`**' if u == 'medusa' else '`{name}`'
-            r = t.format(name=u)
-
-        # if i == 0 and 'medusa' in u:
-        if 'medusa' in u:
-            usage.insert(0, r)
-        else:
-            usage.append(r)
-
-    usage = ', '.join(usage + usage_last)
+    usage = str(req.usage)
 
     # Modules
     modules = ', '.join(
@@ -93,7 +65,6 @@ def make_md(requirements: List[VendoredLibrary]):
     requirements.sort(key=lambda req: req.name.lower())
 
     folder = requirements[0].folder[0].rstrip('23')
-    packages_pattern = make_packages_pattern(requirements)
 
     # Header
     data = [
@@ -104,7 +75,7 @@ def make_md(requirements: List[VendoredLibrary]):
 
     # Items
     data += [
-        make_list_item(req, packages_pattern) + '\n'
+        make_list_item(req) + '\n'
         for req in requirements
     ]
 
@@ -120,6 +91,11 @@ def make_md(requirements: List[VendoredLibrary]):
     return data
 
 
+def vendored_library_object_hook(obj):
+    obj['usage'] = UsedBy.from_json(obj['usage'])
+    return VendoredLibrary(**obj)
+
+
 def main(infile: str, outfile: str):
     inpath = Path(infile)
     outpath = Path(outfile)
@@ -131,9 +107,10 @@ def main(infile: str, outfile: str):
             outpath = inpath
     else:
         with inpath.open('r', encoding='utf-8') as fh:
-            original = json.load(fh)
-
-        requirements: List[VendoredLibrary] = [VendoredLibrary(**req) for req in original]
+            requirements: List[VendoredLibrary] = json.load(
+                fh,
+                object_hook=vendored_library_object_hook
+            )
 
     data = make_md(requirements)
 

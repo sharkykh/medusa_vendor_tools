@@ -11,6 +11,7 @@ from tarfile import TarFile
 from textwrap import dedent
 from typing import (
     Dict,
+    Iterable,
     List,
     Mapping,
     Optional,
@@ -27,7 +28,11 @@ from . import parse as parse_md
 from .gen_req import generate_requirements
 from .get_setup_kwargs import get_setup_kwargs
 from .make_md import make_md
-from .models import VendoredLibrary
+from .models import (
+    UsedBy,
+    UsedByModule,
+    VendoredLibrary,
+)
 
 # Typing
 AnyDistribution = Union[
@@ -142,10 +147,10 @@ def vendor(listfile: str, package: str, dependents: List[str], py2: bool, py3: b
         installed.notes += req.notes
 
     # Dependency checks
-    run_dependency_checks(installed, dependencies, dependents, requirements)
+    run_dependency_checks(installed, dependencies, UsedBy(dependents), requirements)
 
     if not installed.usage:
-        installed.usage = ['<UPDATE-ME>']
+        installed.usage = UsedBy(UsedBy.UPDATE_ME)
 
     readme_name = '/'.join(listpath.parts[-2:])
     print(f'Updating {readme_name}')
@@ -446,7 +451,7 @@ def make_list_of_folders(target: str, py2: bool, py3: bool, py6: bool) -> List[s
 def run_dependency_checks(
     installed: VendoredLibrary,
     dependencies: List[Requirement],
-    dependents: List[str],
+    dependents: UsedBy,
     requirements: List[VendoredLibrary]
 ) -> None:
     """
@@ -462,42 +467,28 @@ def run_dependency_checks(
     print('+ Dependency checks +')
     print('+-------------------+')
 
-    installed_pkg_lower = installed.name.lower()
     installed_pkg_extras = [None] + installed.extras
 
     deps_fmt = '\n  '.join(map(str, dependencies)) or 'no dependencies'
     print(f'Package {installed.package} depends on:\n  {deps_fmt}\n')
 
-    dependents_lower = list(map(str.lower, dependents))
-
-    def remove_dependent(name):
-        i = dependents_lower.index(name)
-        dependents_lower.pop(i)
-        dependents.pop(i)
-
     # Filter out dependencies that are required by "extras" we did not install
-    filtered_dependencies = list(filter(
+    filtered_dependencies: List[Requirement] = list(filter(
         lambda d: not d.marker or any(d.marker.evaluate({'extra': ex}) for ex in installed_pkg_extras),
         dependencies
     ))
     # Check if a dependency of a previous version is not needed now and remove it
     dep_names: List[str] = [d.name.lower() for d in filtered_dependencies]
     # Types for the loop variables
-    idx: int
-    req: VendoredLibrary
-    for idx, req in enumerate(requirements):
-        req_lower = req.name.lower()
-        usage_lower = list(map(str.lower, req.usage))
-
+    for req in requirements:
         # Does this library use the installed package?
-        if dependents_lower and req_lower in dependents_lower and not installed.used_by(req_lower):
+        if req in dependents and req not in installed.usage:
             print(f'Adding `{req.name}` to the "usage" column of `{installed.name}`')
-            installed.usage.append(req.name)
-            remove_dependent(req_lower)
+            installed.usage.add(req)
+            dependents.remove(req)
 
-        if installed_pkg_lower in usage_lower and req_lower not in dep_names:
-            idx = usage_lower.index(installed_pkg_lower)
-            req.usage.pop(idx)
+        if installed in req.usage and req.name.lower() not in dep_names:
+            req.usage.remove(installed)
             print(f'Removed `{installed.name}` usage from dependency `{req.name}`')
 
     # Check that the dependencies are installed (partial),
@@ -526,27 +517,23 @@ def run_dependency_checks(
             else:
                 print(f'Need to update `{dep_req_name}` from {dep_req_ver} to match specifier: {dep.specifier}')
 
-        if not dep_req.used_by(installed_pkg_lower):
+        if installed not in dep_req.usage:
             print(f'Adding `{installed.name}` to the "usage" column of `{dep_req_name}`')
-            dep_req.usage.append(installed.name)
+            dep_req.usage.add(installed)
 
-            if '<UPDATE-ME>' in dep_req.usage:
-                dep_req.usage.remove('<UPDATE-ME>')
-            if '<UNUSED>' in dep_req.usage:
-                dep_req.usage.remove('<UNUSED>')
+            dep_req.usage.remove(UsedBy.UPDATE_ME, ignore_errors=True)
 
     # Add remaining dependents
+    d: UsedByModule
     for d in dependents:
-        if d.lower() == 'medusa':
-            d = 'medusa'
-        if not installed.used_by(d):
+        if d.name.lower() == 'medusa':
+            d.name = 'medusa'
+        if d not in installed.usage:
             print(f'Adding `{d}` to the "usage" column of `{installed.name}`')
-            installed.usage.append(d)
-            remove_dependent(d)
+            installed.usage.add(d)
+            dependents.remove(d)
 
-    usage_sans_placeholders = list(filter(lambda s: s not in ('<UPDATE-ME>', '<UNUSED>'), installed.usage))
-    if usage_sans_placeholders:
-        installed.usage = usage_sans_placeholders
+    installed.usage.remove(UsedBy.UPDATE_ME, ignore_errors=True)
 
     print('+++++++++++++++++++++')
 
