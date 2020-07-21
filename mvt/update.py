@@ -45,7 +45,7 @@ def update(listfile: Union[Path, str], package: str, cmd: bool) -> None:
 
     if cmd:
         print(f'Vendor command for: `{req.package}`')
-        if listfile == Path(DEFAULT_EXT_README):
+        if listfile.samefile(DEFAULT_EXT_README):
             print(f'> mvt vendor {req_str}')
         else:
             listfile_escaped =f'"{listfile_str}"' if ' ' in listfile_str else listfile_str
