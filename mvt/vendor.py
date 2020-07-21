@@ -6,10 +6,11 @@ import re
 import shutil
 import subprocess
 import sys
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from tarfile import TarFile
 from textwrap import dedent
 from typing import (
+    Dict,
     List,
     Mapping,
     Optional,
@@ -709,46 +710,51 @@ def get_modules(temp_install_dir: Path, installed_pkg: AnyDistribution) -> List[
 
         # backports/__init__.py,sha256=elt6uFwbaEv80X8iGWsCJ_w_n_h1X8repgOoNrN0Syg,212
         # backports/configparser/__init__.py,sha256=thhQqB1qWNKf-F3CpZFYsjC8YT-_I_vF0w4JiuQfiWI,56628
-        namespace_packages: List[str] = []
         NAMESPACE_PACKAGE_PATTERN = re.compile(r'__path__\s*=.*?extend_path\(__path__, __name__\)')
+        namespace_packages: Dict[str, List[PurePosixPath]] = {}
 
-        for (raw_file_path, _, _) in csv.reader(raw_top_level):
-            file_path: Path = Path(raw_file_path)
-            full_file_path: Path = temp_install_dir / file_path
-
-            top_level_name: str = file_path.parts[0]
-            package_path = file_path.parent.as_posix()
-            package_path_s = package_path + '/'
+        for (raw_path, _, _) in csv.reader(raw_top_level):
+            path = PurePosixPath(raw_path)
+            full_path = Path(temp_install_dir, path)
+            top_level_name: str = path.parts[0]
 
             # six-1.12.0.dist-info/top_level.txt,sha256=_iVH_iYEtEXnD8nYGQYpYFUvkUW9sEO1GYbkeKSAais,4
             if top_level_name.endswith(('.dist-info', '.egg-info')):
                 continue
             # ../../bin/subliminal.exe,sha256=_00-qFoXoJiPYvmGWSVsK5WspavdE6umXt82G980GiA,102763
-            if top_level_name == '..':
-                continue
-            if top_level_name == 'tests':
+            if top_level_name in ('..', 'tests'):
                 continue
 
+            # Inside a namespace package (`backports/*`)
+            if top_level_name in namespace_packages:
+                namespace_packages[top_level_name].append(path)
+                continue
+
+            # Is this a namespace package? (`backports`)
+            if bool(
+                path.name == '__init__.py' and
+                re.search(NAMESPACE_PACKAGE_PATTERN, full_path.read_text())
+            ):
+                # Mark this package path as a namespace package
+                namespace_packages[top_level_name] = []
+                continue
+
+            # Use the left-most name (top-level directory or file)
             parsed_top_level.append(top_level_name)
-            continue
 
-            # TODO: Namespace package handling needs more work
+        # Loop over namespace packages
+        for top_level, paths in namespace_packages.items():
+            if len(paths) == 1:
+                # Single file inside a namespace package (apart from `__init__.py`)
+                parsed_top_level.append(str(paths[0]))
+                continue
 
-            inside_namespace = next((True for ns in namespace_packages if package_path_s != ns and package_path_s.startswith(ns)), False)
-            if inside_namespace:
-                # Use the sub-package path as the module
-                parsed_top_level.append(package_path)
-            else:
-                # Is this a namespace package? (`backports`)
-                if bool(
-                    file_path.name == '__init__.py' and
-                    re.search(NAMESPACE_PACKAGE_PATTERN, full_file_path.read_text())
-                ):
-                    # Mark this package path as a namespace package
-                    namespace_packages.append(package_path_s)
-                else:
-                    # Use the left-most name (directory or file)
-                    parsed_top_level.append(top_level_name)
+            # Using dict to preserve order while remaining unique
+            sub_modules: List[str] = list(dict.fromkeys(
+                '/'.join(p.parts[:2])
+                for p in paths
+            ))
+            parsed_top_level.extend(sub_modules)
 
     # Determine the main module and check how the name matches
     top_level: List[str] = []
