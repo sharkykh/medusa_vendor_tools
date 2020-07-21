@@ -13,6 +13,7 @@ from typing import (
 )
 
 from . import parse
+from .__main__ import DEFAULT_EXT_README
 from .models import VendoredLibrary
 
 
@@ -122,9 +123,13 @@ def make_md(requirements: List[VendoredLibrary]):
 
 def main(infile: str, outfile: str):
     inpath = Path(infile)
+    outpath = Path(outfile)
 
     if inpath.suffix == '.md':
         requirements: List[VendoredLibrary] = [req for req, error in parse.parse_requirements(inpath)]
+        if outpath.samefile(DEFAULT_EXT_README):
+            outfile = infile
+            outpath = inpath
     else:
         with inpath.open('r', encoding='utf-8') as fh:
             original = json.load(fh)
@@ -133,6 +138,5 @@ def main(infile: str, outfile: str):
 
     data = make_md(requirements)
 
-    outpath = Path(outfile)
     with outpath.open('w', encoding='utf-8', newline='\n') as fh:
         fh.write(''.join(data))
