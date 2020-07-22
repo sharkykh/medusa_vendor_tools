@@ -52,7 +52,14 @@ NAMESPACE_PACKAGE_PATTERN: Pattern = re.compile(r'__path__\s*=.*?extend_path\(__
 
 
 # Main method
-def vendor(listfile: str, package: str, dependents: List[str], py2: bool, py3: bool, py6: bool) -> None:
+def vendor(
+    listfile: str,
+    package: str,
+    dependents: List[str],
+    py2: bool,
+    py3: bool,
+    py6: bool
+) -> None:
     listpath = Path(listfile).resolve()
     root = listpath.parent.parent
 
@@ -115,7 +122,7 @@ def vendor(listfile: str, package: str, dependents: List[str], py2: bool, py3: b
         extracted_source, source_commit_hash = extract_source(source_archive)
         setup_py_results = check_setup_py(extracted_source, py2=py2, py3=py3)
     except InstallFailed as error:
-        drop_dir(download_target)
+        drop_dir(download_target, ignore_errors=True)
         print(f'Error: {error!r}')
         return
 
@@ -140,7 +147,7 @@ def vendor(listfile: str, package: str, dependents: List[str], py2: bool, py3: b
     installed.folder = install_folders
 
     # Remove downloaded source after installation
-    drop_dir(download_target)
+    drop_dir(download_target, ignore_errors=True)
 
     if req:
         installed.usage = req.usage
@@ -529,7 +536,7 @@ def run_dependency_checks(
         if d.name.lower() == 'medusa':
             d.name = 'medusa'
         if d not in installed.usage:
-            print(f'Adding `{d}` to the "usage" column of `{installed.name}`')
+            print(f'Adding `{d.name}` to the "usage" column of `{installed.name}`')
             installed.usage.add(d)
             dependents.remove(d)
 
@@ -633,7 +640,7 @@ def install(
     drop_dir(Path(installed_pkg.egg_info))
 
     # Move the files to the target vendor folder
-    move_subtrees_r(temp_install_dir, vendor_dir, False)
+    move_subtrees_r(temp_install_dir, vendor_dir)
 
     # Remove the temp install folder
     try:
@@ -648,9 +655,13 @@ class InstallFailed(Exception):
     pass
 
 
-def move_subtrees_r(source: Path, target: Path, use_replace: bool = True):
+def move_subtrees_r(source: Path, target: Path, first: bool = True):
     """Recursive tree merge."""
-    path_attr = 'replace' if use_replace else 'rename'
+    if first:
+        target.mkdir(exist_ok=True)
+        path_attr = 'rename'
+    else:
+        path_attr = 'replace'
 
     subtree: Path
     for subtree in source.glob('*'):
@@ -658,9 +669,13 @@ def move_subtrees_r(source: Path, target: Path, use_replace: bool = True):
         try:
             getattr(subtree, path_attr)(target_path)
         except FileExistsError:
-            move_subtrees_r(subtree, target_path)
+            move_subtrees_r(subtree, target_path, False)
 
-    source.rmdir()
+    if not first:
+        try:
+            source.rmdir()
+        except OSError:
+            pass
 
 
 def get_modules(temp_install_dir: Path, installed_pkg: AnyDistribution) -> List[str]:
