@@ -11,6 +11,8 @@ from typing import (
     Union,
 )
 
+from . import PROJECT_MODULE
+
 VendoredLibraryType = TypeVar('VendoredLibraryType', bound='VendoredLibrary')
 UsedByModuleType = TypeVar('UsedByModuleType', bound='UsedByModule')
 UsedByType = TypeVar('UsedByType', bound='UsedBy')
@@ -56,7 +58,7 @@ class UsedByModule:
         return self.name == value
 
     def __str__(self) -> str:
-        name = f'**`{self.name}`**' if self.name == 'medusa' else f'`{self.name}`'
+        name = f'**`{self.name}`**' if self.name == PROJECT_MODULE else f'`{self.name}`'
         if not self.extra:
             return name
         return ' '.join((name, self.extra))
@@ -122,7 +124,7 @@ class UsedBy:
                 usage_last.append(item)
                 continue
 
-            if item == 'medusa':
+            if item == PROJECT_MODULE:
                 usage.insert(0, item)
             else:
                 usage.append(item)
@@ -276,7 +278,7 @@ class VendoredLibrary:
 
     @property
     def used_by_medusa(self) -> bool:
-        return 'medusa' in self.usage
+        return PROJECT_MODULE in self.usage
 
     @property
     def updatable(self) -> bool:

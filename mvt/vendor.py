@@ -24,7 +24,10 @@ import pkg_resources
 from pkg_resources._vendor.packaging.requirements import InvalidRequirement, Requirement
 from pkg_resources._vendor.packaging.markers import Marker
 
-from . import parse as parse_md
+from . import (
+    PROJECT_MODULE,
+    parse as parse_md,
+)
 from .gen_req import generate_requirements
 from .get_setup_kwargs import get_setup_kwargs
 from .make_md import make_md
@@ -533,8 +536,8 @@ def run_dependency_checks(
     # Add remaining dependents
     d: UsedByModule
     for d in dependents:
-        if d.name.lower() == 'medusa':
-            d.name = 'medusa'
+        if d.name.lower() == PROJECT_MODULE.lower():
+            d.name = PROJECT_MODULE
         if d not in installed.usage:
             print(f'Adding `{d.name}` to the "usage" column of `{installed.name}`')
             installed.usage.add(d)
