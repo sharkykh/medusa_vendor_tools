@@ -35,6 +35,7 @@ from .models import (
     UsedBy,
     UsedByModule,
     VendoredLibrary,
+    VendoredList,
 )
 
 # Typing
@@ -72,13 +73,13 @@ def vendor(
 
     print(f'Starting vendor script for: {parsed_package}')
 
-    # Get requirements from list, try to find the package we're vendoring right now
-    requirements, req_idx = load_requirements(listpath, package_name)
-    target = listpath.parent.name  # `ext` or `lib`
+    # Get requirements from list
+    requirements = load_requirements(listpath)
+    target = requirements.folder or listpath.parent.name  # `ext` or `lib`
 
-    if req_idx is not None:
-        req = requirements[req_idx]
-    else:
+    try:
+        req = requirements[package_name]
+    except KeyError:
         req = None
 
     if req:
@@ -153,10 +154,10 @@ def vendor(
     readme_name = '/'.join(listpath.parts[-2:])
     print(f'Updating {readme_name}')
 
-    if req_idx is not None:
-        requirements[req_idx] = installed
+    if req:
+        requirements[installed.name] = installed
     else:
-        requirements.append(installed)
+        requirements.add(installed)
 
     md_data = make_md(requirements)
 
@@ -429,7 +430,7 @@ def run_dependency_checks(
     installed: VendoredLibrary,
     dependencies: List[Requirement],
     dependents: UsedBy,
-    requirements: List[VendoredLibrary]
+    requirements: VendoredList,
 ) -> None:
     """
     Run dependency checks.
@@ -457,6 +458,7 @@ def run_dependency_checks(
     # Check if a dependency of a previous version is not needed now and remove it
     dep_names: List[str] = [d.name.lower() for d in filtered_dependencies]
     # Types for the loop variables
+    req: VendoredLibrary
     for req in requirements:
         # Does this library use the installed package?
         if req in dependents and req not in installed.usage:
@@ -475,8 +477,8 @@ def run_dependency_checks(
     dep: Requirement
     for dep in filtered_dependencies:
         try:
-            dep_req_idx = req_names.index(dep.name.lower())
-        except ValueError:
+            dep_req = requirements[dep.name]
+        except KeyError:
             # raised if dependency was not found
             specifier = str(dep.specifier) or 'any version'
             text = f'May need to install new dependency `{dep.name}` @ {specifier}'
@@ -485,17 +487,14 @@ def run_dependency_checks(
             print(text)
             continue
 
-        dep_req = requirements[dep_req_idx]
-        dep_req_name = dep_req.name
-        dep_req_ver = dep_req.version
-        if dep_req_ver not in dep.specifier:
+        if dep_req.version not in dep.specifier:
             if dep_req.git:
-                print(f'May need to update `{dep_req_name}` (git dependency) to match specifier: {dep.specifier}')
+                print(f'May need to update `{dep_req.name}` (git dependency) to match specifier: {dep.specifier}')
             else:
-                print(f'Need to update `{dep_req_name}` from {dep_req_ver} to match specifier: {dep.specifier}')
+                print(f'Need to update `{dep_req.name}` from {dep_req.version} to match specifier: {dep.specifier}')
 
         if installed not in dep_req.usage:
-            print(f'Adding `{installed.name}` to the "used by" column of `{dep_req_name}`')
+            print(f'Adding `{installed.name}` to the "used by" column of `{dep_req.name}`')
             dep_req.usage.add(installed)
 
             dep_req.usage.remove(UsedBy.UPDATE_ME, ignore_errors=True)

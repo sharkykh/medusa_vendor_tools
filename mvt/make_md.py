@@ -5,11 +5,12 @@ from pathlib import Path
 from typing import List
 
 from .__main__ import DEFAULT_EXT_README
+from ._utils import load_requirements
 from .models import (
     UsedBy,
     VendoredLibrary,
+    VendoredList,
 )
-from .parse import parse_requirements
 
 
 def make_list_item(req: VendoredLibrary):
@@ -61,10 +62,8 @@ def make_list_item(req: VendoredLibrary):
     return ' | '.join((folder, package, version, usage, notes))
 
 
-def make_md(requirements: List[VendoredLibrary]):
-    requirements.sort(key=lambda req: req.name.lower())
-
-    folder = requirements[0].folder[0].rstrip('23')
+def make_md(requirements: VendoredList) -> List[str]:
+    folder = requirements.folder
 
     # Header
     data = [
@@ -96,16 +95,14 @@ def main(infile: str, outfile: str):
     outpath = Path(outfile)
 
     if inpath.suffix == '.md':
-        requirements: List[VendoredLibrary] = [req for req, error in parse_requirements(inpath)]
+        requirements = load_requirements(inpath, ignore_errors=True)
+
         if outpath.samefile(DEFAULT_EXT_README):
             outfile = infile
             outpath = inpath
     else:
         with inpath.open('r', encoding='utf-8') as fh:
-            requirements: List[VendoredLibrary] = json.load(
-                fh,
-                object_hook=VendoredLibrary.from_json,
-            )
+            requirements = VendoredList.from_json(json.load(fh))
 
     data = make_md(requirements)
 

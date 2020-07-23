@@ -22,18 +22,15 @@ def remove(listfile: str, package: str) -> None:
         return
 
     # Get requirements from list, try to find the package we're vendoring right now
-    requirements, req_idx = load_requirements(listpath, package)
-    if req_idx is None:
+    requirements = load_requirements(listpath)
+    if package not in requirements:
         print(f'Package `{package}` not found')
         return
 
-    req: VendoredLibrary = requirements[req_idx]
-    target = listpath.parent.name  # `ext` or `lib`
-    name_lower = req.name.lower()
+    req: VendoredLibrary = requirements[package]
+    target = requirements.folder or listpath.parent.name  # `ext` or `lib`
 
     print(f'Starting removal of `{req.name}`')
-
-    requirements.pop(req_idx)
 
     print()
     print('++++++++++++++++++++++')
@@ -44,31 +41,31 @@ def remove(listfile: str, package: str) -> None:
     unused = []  # Possibly unused
     still_used = []  # Possibly still being used
 
-    r: VendoredLibrary
-    for r in requirements:
-        if r == req:
+    dep: VendoredLibrary
+    for dep in requirements:
+        if dep == req:
             continue
 
         # Warn about packages using `req`:
-        if r in req.usage:
+        if dep in req.usage:
             still_used.append(r)
 
         # if `r` used by `req`
         # remove `req.name` from `r.usage`
-        if req not in r.usage:
+        if req not in dep.usage:
             continue
 
-        print(f'Removing `{req.name}` usage from dependency `{r.name}`')
-        r.usage.remove(req)
+        print(f'Removing `{req.name}` usage from dependency `{dep.name}`')
+        dep.usage.remove(req)
 
-        if not r.usage:
-            unused.append(r)
+        if not dep.usage:
+            unused.append(dep)
 
     # Display warnings
-    for r in still_used:
-        print(f'Warning: `{req.name}` possibly still being used by `{r.name}`')
-    for r in unused:
-        print(f'Possibly unused: `{r.name}`, consider removing')
+    for dep in still_used:
+        print(f'Warning: `{req.name}` possibly still being used by `{dep.name}`')
+    for dep in unused:
+        print(f'Possibly unused: `{dep.name}`, consider removing')
 
     print('\n======================\n')
 
@@ -80,6 +77,9 @@ def remove(listfile: str, package: str) -> None:
         remove_all(package_modules)
     except OSError:
         pass
+
+    # Remove from list
+    del requirements[req]
 
     readme_name = '/'.join(listpath.parts[-2:])
     print(f'Updating {readme_name}')

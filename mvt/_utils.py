@@ -2,39 +2,25 @@
 """Utility functions."""
 import shutil
 from pathlib import Path
-from typing import (
-    List,
-    Optional,
+from typing import List
+
+from .models import (
+    VendoredLibrary,
+    VendoredList,
 )
-
-from .models import VendoredLibrary
-from .parse import (
-    LineParseError,
-    parse_requirements,
-)
+from .parse import parse_requirements
 
 
-def load_requirements(listpath: Path, package_name: str) -> (List[VendoredLibrary], Optional[int]):
-    """Get requirements from list, try to find the provided package's index."""
-    requirements: List[VendoredLibrary] = []
-    req_idx: Optional[int] = None
+def load_requirements(listpath: Path, ignore_errors: bool = False) -> VendoredList:
+    """Get requirements from list."""
+    requirements = VendoredList()
 
-    generator = parse_requirements(listpath)
-
-    package_name_lower = package_name.lower()
-    # Types for the loop variables
-    index: int
-    req: Optional[VendoredLibrary]
-    error: Optional[LineParseError]
-    for index, (req, error) in enumerate(generator):
-        if error:
+    for req, error in parse_requirements(listpath):
+        if error and not ignore_errors:
             raise error
-        requirements.append(req)
+        requirements.add(req)
 
-        if package_name_lower == req.name.lower():
-            req_idx = index
-
-    return requirements, req_idx
+    return requirements
 
 
 def package_module_paths(req: VendoredLibrary, root: Path) -> List[Path]:

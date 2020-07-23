@@ -18,6 +18,7 @@ from . import PROJECT_MODULE
 UsedByModuleType = TypeVar('UsedByModuleType', bound='UsedByModule')
 UsedByType = TypeVar('UsedByType', bound='UsedBy')
 VendoredLibraryType = TypeVar('VendoredLibraryType', bound='VendoredLibrary')
+VendoredListType = TypeVar('VendoredListType', bound='VendoredList')
 
 KeyType = Union[VendoredLibraryType, UsedByModuleType, str]
 GetItemKeyType = Union[KeyType, int, slice]
@@ -311,3 +312,95 @@ class VendoredLibrary:
 
     def __str__(self) -> str:
         return self.name
+
+
+class VendoredList:
+    def __init__(self):
+        self._items: Dict[str, VendoredLibrary] = {}
+
+    @classmethod
+    def from_json(cls: Type[VendoredListType], data: List[Dict[str, Any]]) -> VendoredListType:
+        result = cls()
+
+        for raw_item in data:
+            item = VendoredLibrary.from_json(raw_item)
+            result.add(item)
+
+        return result
+
+    def json(self) -> List[Dict[str, Any]]:
+        return [item.json() for item in self.ordered]
+
+    @property
+    def ordered(self) -> List[VendoredLibrary]:
+        """Return an ordered list."""
+        return sorted(self._items.values(), key=lambda x: x.name.lower())
+
+    @property
+    def folder(self) -> str:
+        try:
+            return self.ordered[0].folder[0].rstrip('23')
+        except IndexError:
+            return None
+
+    @staticmethod
+    def _to_key(item: KeyType) -> str:
+        if isinstance(item, (VendoredLibrary, UsedByModule)):
+            key = item.name
+        elif isinstance(item, str):
+            key = item
+        else:
+            raise ValueError(f'Unsupported type {item.__class__.__name__}')
+
+        return key.lower()
+
+    def add(self, item: VendoredLibrary):
+        """Add to list."""
+        if not isinstance(item, VendoredLibrary):
+            raise ValueError(f'Unsupported type {item.__class__.__name__}')
+
+        key = item.name.lower()
+
+        if key in self._items:
+            raise KeyError(f'{item.name} already exists!')
+
+        self._items[key] = item
+
+    def remove(self, item: KeyType, ignore_errors: bool = False) -> VendoredLibrary:
+        """Remove from list."""
+        key = self._to_key(item)
+        try:
+            item = self._items[key]
+            del self._items[key]
+            return item
+        except KeyError:
+            if not ignore_errors:
+                raise
+
+    def __contains__(self, item: KeyType) -> bool:
+        key = self._to_key(item)
+        return key in self._items
+
+    def __getitem__(self, item: GetItemKeyType) -> Union[VendoredLibrary, List[VendoredLibrary]]:
+        if isinstance(item, (int, slice)):
+            return self.ordered[item]
+
+        key = self._to_key(item)
+        return self._items[key]
+
+    def __setitem__(self, raw_key: KeyType, item: VendoredLibrary):
+        if not isinstance(item, VendoredLibrary):
+            raise ValueError(f'Unsupported type {item.__class__.__name__}')
+
+        key = self._to_key(raw_key)
+        self._items[key] = item
+
+    def __iter__(self) -> Iterable[VendoredLibrary]:
+        for item in self.ordered:
+            yield item
+
+    def __len__(self) -> int:
+        return len(self._items)
+
+    def __repr__(self) -> str:
+        return f'{self.__class__.__name__}({len(self)})'
