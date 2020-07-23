@@ -4,6 +4,7 @@ import re
 from collections import OrderedDict
 from dataclasses import dataclass, field
 from typing import (
+    Any,
     Dict,
     Iterator,
     List,
@@ -13,10 +14,12 @@ from typing import (
 
 from . import PROJECT_MODULE
 
-VendoredLibraryType = TypeVar('VendoredLibraryType', bound='VendoredLibrary')
 UsedByModuleType = TypeVar('UsedByModuleType', bound='UsedByModule')
 UsedByType = TypeVar('UsedByType', bound='UsedBy')
-UsageItemType = Union[VendoredLibraryType, UsedByModuleType, str]
+VendoredLibraryType = TypeVar('VendoredLibraryType', bound='VendoredLibrary')
+
+KeyType = Union[VendoredLibraryType, UsedByModuleType, str]
+GetItemKeyType = Union[KeyType, int, slice]
 
 
 class UsedByModule:
@@ -63,6 +66,9 @@ class UsedByModule:
             return name
         return ' '.join((name, self.extra))
 
+    def __repr__(self) -> str:
+        data = ', '.join(self.json())
+        return f'{self.__class__.__name__}({data})'
 
 
 class UsedBy:
@@ -132,7 +138,7 @@ class UsedBy:
         return usage + usage_last
 
     @staticmethod
-    def _to_key(item: UsageItemType) -> str:
+    def _to_key(item: KeyType) -> str:
         if isinstance(item, (VendoredLibrary, UsedByModule)):
             key = item.name
         elif isinstance(item, str):
@@ -142,7 +148,7 @@ class UsedBy:
 
         return key.lower()
 
-    def add(self, item: UsageItemType):
+    def add(self, item: KeyType):
         """Add to usage."""
         if isinstance(item, UsedByModule):
             value = item
@@ -156,24 +162,29 @@ class UsedBy:
         key = value.name.lower()
 
         if key in self.modules:
-            raise ValueError(f'{value.name} already exists!')
+            raise KeyError(f'{value.name} already exists!')
 
         self.modules[key] = value
 
-    def remove(self, item: UsageItemType, ignore_errors: bool = False):
+    def remove(self, item: KeyType, ignore_errors: bool = False) -> UsedByModule:
         """Remove from usage."""
         key = self._to_key(item)
         try:
+            item = self.modules[key]
             del self.modules[key]
+            return item
         except KeyError:
             if not ignore_errors:
                 raise
 
-    def __contains__(self, item: UsageItemType) -> bool:
+    def __contains__(self, item: KeyType) -> bool:
         key = self._to_key(item)
         return key in self.modules
 
-    def __getitem__(self, item: UsageItemType) -> UsedByModule:
+    def __getitem__(self, item: GetItemKeyType) -> Union[UsedByModule, List[UsedByModule]]:
+        if isinstance(item, (int, slice)):
+            return self.ordered[item]
+
         key = self._to_key(item)
         return self.modules[key]
 
@@ -189,6 +200,13 @@ class UsedBy:
             return f'`{self._UNUSED}`'
 
         return ', '.join([str(item) for item in self.ordered])
+
+    def __repr__(self) -> str:
+        data = ', '.join([
+            repr(' '.join(item) if isinstance(item, list) else item)
+            for item in self.json()
+        ])
+        return f'{self.__class__.__name__}({data})'
 
 
 @dataclass
@@ -206,6 +224,12 @@ class VendoredLibrary:
     notes: List[str] = field(default_factory=list)
 
     GIT_REPLACE_PATTERN = re.compile(r'/(?:tree|commits?)/', re.IGNORECASE)
+
+    @classmethod
+    def from_json(cls, data: Dict[str, Any]) -> VendoredLibraryType:
+        item = data.copy()
+        item['usage'] = UsedBy.from_json(item['usage'])
+        return cls(**item)
 
     def json(self) -> OrderedDict:
         return OrderedDict([

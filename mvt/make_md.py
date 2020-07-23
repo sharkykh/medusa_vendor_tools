@@ -91,11 +91,6 @@ def make_md(requirements: List[VendoredLibrary]):
     return data
 
 
-def vendored_library_object_hook(obj):
-    obj['usage'] = UsedBy.from_json(obj['usage'])
-    return VendoredLibrary(**obj)
-
-
 def main(infile: str, outfile: str):
     inpath = Path(infile)
     outpath = Path(outfile)
@@ -106,13 +101,13 @@ def main(infile: str, outfile: str):
             outfile = infile
             outpath = inpath
     else:
-        with inpath.open('r', encoding='utf-8') as fh:
+        with inpath.open('r') as fh:
             requirements: List[VendoredLibrary] = json.load(
                 fh,
-                object_hook=vendored_library_object_hook
+                object_hook=VendoredLibrary.from_json,
             )
 
     data = make_md(requirements)
 
-    with outpath.open('w', encoding='utf-8', newline='\n') as fh:
+    with outpath.open('w', newline='\n') as fh:
         fh.write(''.join(data))
