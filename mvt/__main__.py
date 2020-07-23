@@ -165,8 +165,8 @@ def main(args=None):
         test(args.file)
 
     if args.command == 'check':
-        from .check import check
-        check(args.file)
+        from .check import check_modules
+        check_modules(args.file)
 
     if args.command == 'sort':
         from .sort import sort_md

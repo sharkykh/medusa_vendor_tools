@@ -12,7 +12,7 @@ from . import parse
 from .models import VendoredLibrary
 
 
-def check(inpath: Union[Path, str]) -> None:
+def check_modules(inpath: Union[Path, str]) -> None:
     if not isinstance(inpath, Path):
         inpath = Path(inpath)
 
@@ -29,19 +29,20 @@ def check(inpath: Union[Path, str]) -> None:
             print(str(error), file=sys.stderr)
             continue
 
+        results: List[str] = []
         for module in req.modules:
-            # backports/package.py [OR] backports.module
-            split_count = (module.count('.') - 1) if module.endswith('.py') else -1
-            parts: List[str] = module.split('.', split_count)
-
-            module_paths: List[Path] = [root.joinpath(f, *parts) for f in req.folder]
-            rel_module_paths: List[str] = [str(p.relative_to(root).as_posix()) for p in module_paths]
+            module_paths: List[Path] = [root.joinpath(f, module) for f in req.folder]
+            rel_module_paths: List[str] = [p.relative_to(root).as_posix() for p in module_paths]
 
             if not all(p.exists() for p in module_paths):
-                print(f'XX {module} !!  NOT FOUND IN: {rel_module_paths}')
+                results.append(f'  XX {module} !!  NOT FOUND IN: {rel_module_paths}')
                 all_found = False
-            else:
-                pass  # print(f'VV {module} {rel_module_paths}')
+            # else:
+            #     results.append(f'  VV {module} => {rel_module_paths}')
+
+        if results:
+            print(f'{req.name}')
+            print('\n'.join(results))
 
     if all_found:
         print('Done.')
