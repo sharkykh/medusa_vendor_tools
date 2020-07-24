@@ -1,9 +1,40 @@
 # coding: utf-8
 """Utility functions."""
+import shutil
 from pathlib import Path
-from typing import List
+from typing import (
+    List,
+    Optional,
+)
 
 from .models import VendoredLibrary
+from .parse import (
+    LineParseError,
+    parse_requirements,
+)
+
+
+def load_requirements(listpath: Path, package_name: str) -> (List[VendoredLibrary], Optional[int]):
+    """Get requirements from list, try to find the provided package's index."""
+    requirements: List[VendoredLibrary] = []
+    req_idx: Optional[int] = None
+
+    generator = parse_requirements(listpath)
+
+    package_name_lower = package_name.lower()
+    # Types for the loop variables
+    index: int
+    req: Optional[VendoredLibrary]
+    error: Optional[LineParseError]
+    for index, (req, error) in enumerate(generator):
+        if error:
+            raise error
+        requirements.append(req)
+
+        if package_name_lower == req.name.lower():
+            req_idx = index
+
+    return requirements, req_idx
 
 
 def package_module_paths(req: VendoredLibrary, root: Path) -> List[Path]:
@@ -36,3 +67,17 @@ def package_module_paths(req: VendoredLibrary, root: Path) -> List[Path]:
                     package_modules.append(ns_path)
 
     return package_modules
+
+
+def drop_dir(path: Path, ignore_errors=False, onerror=None):
+    """Recursively delete the directory tree at `path`."""
+    shutil.rmtree(str(path), ignore_errors=ignore_errors, onerror=onerror)
+
+
+def remove_all(paths: List[Path]):
+    """Recursively delete every file and directory tree of `paths`."""
+    for path in paths:
+        if path.is_dir():
+            drop_dir(path)
+        else:
+            path.unlink()

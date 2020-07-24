@@ -1,9 +1,7 @@
 # coding: utf-8
 """Vendor (or update existing) libraries."""
 import csv
-import os
 import re
-import shutil
 import subprocess
 import sys
 from pathlib import Path, PurePosixPath
@@ -11,7 +9,6 @@ from tarfile import TarFile
 from textwrap import dedent
 from typing import (
     Dict,
-    Iterable,
     List,
     Mapping,
     Optional,
@@ -24,11 +21,13 @@ import pkg_resources
 from pkg_resources._vendor.packaging.requirements import InvalidRequirement, Requirement
 from pkg_resources._vendor.packaging.markers import Marker
 
-from . import (
-    PROJECT_MODULE,
-    parse as parse_md,
+from . import PROJECT_MODULE
+from ._utils import (
+    drop_dir,
+    load_requirements,
+    package_module_paths,
+    remove_all,
 )
-from ._utils import package_module_paths
 from .gen_req import generate_requirements
 from .get_setup_kwargs import get_setup_kwargs
 from .make_md import make_md
@@ -162,7 +161,7 @@ def vendor(
     md_data = make_md(requirements)
 
     if not listpath.parent.exists():
-        os.makedirs(listpath.parent, exist_ok=True)
+        listpath.parent.mkdir(parents=True, exist_ok=True)
 
     with listpath.open('w', encoding='utf-8', newline='\n') as fh:
         fh.write(''.join(md_data))
@@ -196,29 +195,6 @@ def parse_input(package: str) -> Requirement:
         pass
 
     raise ValueError(f'Unable to parse {package}')
-
-
-def load_requirements(listpath: Path, package_name: str) -> (List[VendoredLibrary], Optional[int]):
-    """Get requirements from list, try to find the package we're vendoring right now."""
-    requirements: List[VendoredLibrary] = []
-    req_idx: Optional[int] = None
-
-    generator = parse_md.parse_requirements(listpath)
-
-    package_name_lower = package_name.lower()
-    # Types for the loop variables
-    index: int
-    req: Optional[VendoredLibrary]
-    error: Optional[parse_md.LineParseError]
-    for index, (req, error) in enumerate(generator):
-        if error:
-            raise error
-        requirements.append(req)
-
-        if package_name_lower == req.name.lower():
-            req_idx = index
-
-    return requirements, req_idx
 
 
 def download_source(parsed_package: Requirement, download_target: Path, py2: bool = False, py3: bool = False) -> Path:
@@ -535,20 +511,6 @@ def run_dependency_checks(
     installed.usage.remove(UsedBy.UPDATE_ME, ignore_errors=True)
 
     print('+++++++++++++++++++++')
-
-
-def drop_dir(path: Path, **kwargs):
-    """Recursively delete the directory tree at `path`."""
-    shutil.rmtree(str(path), **kwargs)
-
-
-def remove_all(paths: Iterable[Path]):
-    """Recursively delete every file and directory tree of `paths`."""
-    for path in paths:
-        if path.is_dir():
-            drop_dir(path)
-        else:
-            path.unlink()
 
 
 def install(
