@@ -8,8 +8,7 @@ from typing import (
     Union,
 )
 
-from . import parse
-from .models import VendoredLibrary
+from .parse import parse_requirements
 
 
 def check_modules(inpath: Union[Path, str]) -> None:
@@ -19,12 +18,8 @@ def check_modules(inpath: Union[Path, str]) -> None:
     root = inpath.parent.parent.resolve()
 
     all_found = True
-    generator = parse.parse_requirements(inpath)
 
-    # Types for the loop variables
-    req: Optional[VendoredLibrary]
-    error: Optional[parse.LineParseError]
-    for req, error in generator:
+    for req, error in parse_requirements(inpath):
         if error:
             print(str(error), file=sys.stderr)
             continue

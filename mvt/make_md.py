@@ -4,12 +4,12 @@ import json
 from pathlib import Path
 from typing import List
 
-from . import parse
 from .__main__ import DEFAULT_EXT_README
 from .models import (
     UsedBy,
     VendoredLibrary,
 )
+from .parse import parse_requirements
 
 
 def make_list_item(req: VendoredLibrary):
@@ -96,7 +96,7 @@ def main(infile: str, outfile: str):
     outpath = Path(outfile)
 
     if inpath.suffix == '.md':
-        requirements: List[VendoredLibrary] = [req for req, error in parse.parse_requirements(inpath)]
+        requirements: List[VendoredLibrary] = [req for req, error in parse_requirements(inpath)]
         if outpath.samefile(DEFAULT_EXT_README):
             outfile = infile
             outpath = inpath

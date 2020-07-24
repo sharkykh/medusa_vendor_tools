@@ -7,9 +7,8 @@ from typing import (
     Union,
 )
 
-from . import parse
 from .__main__ import DEFAULT_EXT_README
-from .models import VendoredLibrary
+from .parse import parse_requirements
 from .vendor import vendor
 
 
@@ -18,12 +17,8 @@ def update(listfile: Union[Path, str], package: str, cmd: bool) -> None:
         listfile = Path(listfile)
 
     package_lower = package.lower()
-    generator = parse.parse_requirements(listfile)
 
-    # Types for the loop variables
-    req: Optional[VendoredLibrary]
-    error: Optional[parse.LineParseError]
-    for req, error in generator:
+    for req, error in parse_requirements(listfile):
         if error:
             print(str(error), file=sys.stderr)
             continue

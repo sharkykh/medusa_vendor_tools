@@ -4,7 +4,7 @@
 import re
 from pathlib import Path
 from typing import (
-    Iterator,
+    Iterable,
     List,
     Tuple,
 )
@@ -63,7 +63,7 @@ class LineParseError(Exception):
         return result
 
 
-def parse_requirements(md_path: Path) -> Iterator[Tuple[VendoredLibrary, LineParseError]]:
+def parse_requirements(md_path: Path) -> Iterable[Tuple[VendoredLibrary, LineParseError]]:
     """Yields `(VendoredLibrary, None)` or `(None, LineParseError)`."""
     if not md_path.exists():
         return

@@ -10,17 +10,14 @@ from typing import (
     Callable,
     Dict,
     List,
-    Optional,
     Union
 )
 
 import requests
 
-from . import (
-    __version__ as VERSION,
-    parse
-)
+from . import __version__ as VERSION
 from .models import VendoredLibrary
+from .parse import parse_requirements
 
 
 try:
@@ -47,12 +44,7 @@ def outdated(listfile: Union[Path, str], packages: List[str]) -> None:
 
     packages_lower = [p.lower() for p in packages]
 
-    generator = parse.parse_requirements(listfile)
-
-    # Types for the loop variables
-    req: Optional[VendoredLibrary]
-    error: Optional[parse.LineParseError]
-    for req, error in generator:
+    for req, error in parse_requirements(listfile):
         name_lower = req.name.lower()
         if packages and name_lower not in packages_lower:
             continue

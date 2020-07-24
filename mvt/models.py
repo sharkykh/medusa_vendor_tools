@@ -6,7 +6,7 @@ from dataclasses import dataclass, field
 from typing import (
     Any,
     Dict,
-    Iterator,
+    Iterable,
     List,
     TypeVar,
     Union,
@@ -184,7 +184,7 @@ class UsedBy:
         key = self._to_key(item)
         return self._modules[key]
 
-    def __iter__(self) -> Iterator[UsedByModule]:
+    def __iter__(self) -> Iterable[UsedByModule]:
         for item in self.ordered:
             yield item
 

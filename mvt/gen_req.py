@@ -5,7 +5,6 @@ import sys
 from pathlib import Path
 
 from . import PROJECT_MODULE
-from .models import VendoredLibrary
 from .parse import parse_requirements
 
 
@@ -14,7 +13,6 @@ def generate_requirements(infile: str, outfile: str, all_packages: bool = False,
     outpath = Path(outfile)
 
     requirements = []
-    req: VendoredLibrary
     for req, error in parse_requirements(inpath):
         if error:
             print(str(error), file=sys.stderr)
