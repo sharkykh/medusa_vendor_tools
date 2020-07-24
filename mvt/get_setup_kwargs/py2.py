@@ -26,7 +26,7 @@ try:
 except ImportError:
     raise Exception(
         'Please install `mock` using the following command:\n'
-        'py -2 -m pip install mock'
+        'py -2.7 -m pip install mock'
     )
 
 if __package__ is not None:
