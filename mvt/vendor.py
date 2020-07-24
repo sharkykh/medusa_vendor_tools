@@ -205,9 +205,11 @@ def download_source(parsed_package: Requirement, download_target: Path, py2: boo
 
     print(f'Downloading source for {parsed_package.name}')
 
+    no_cache = ['--no-cache-dir'] if parsed_package.url else []
+
     with_py2 = py2 and not py3
     args: List[str] = executable(with_py2) + [
-        '-m', 'pip', '--no-python-version-warning', 'download', '--no-binary', ':all:', '--no-deps', '--no-cache-dir',
+        '-m', 'pip', '--no-python-version-warning', 'download', '--no-binary', ':all:', '--no-deps', *no_cache,
         '--dest', str(download_target), str(parsed_package),
     ]
     if with_py2:
