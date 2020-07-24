@@ -309,3 +309,6 @@ class VendoredLibrary:
                 return False
 
         return True
+
+    def __str__(self) -> str:
+        return self.name
