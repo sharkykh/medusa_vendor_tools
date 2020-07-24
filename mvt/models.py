@@ -106,7 +106,7 @@ class UsedBy:
 
         for raw_item in data:
             item = UsedByModule.from_json(raw_item)
-            result.modules[item.name.lower()] = item
+            result.add(item)
 
         return result
 
