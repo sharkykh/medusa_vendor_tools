@@ -85,20 +85,17 @@ class UsedBy:
         if not raw_used_by:
             return
 
-        def process(items: List[str]):
-            for raw_item in items:
-                item = UsedByModule(raw_item)
+        if isinstance(raw_used_by, str):
+            raw_used_by = raw_used_by.split(', ')
 
-                if item.match(self._UNUSED):
-                    self._modules = {}
-                    return
+        for raw_item in raw_used_by:
+            item = UsedByModule(raw_item)
 
-                self._modules[item.name.lower()] = item
+            if item.match(self._UNUSED):
+                self._modules = {}
+                return
 
-        if isinstance(raw_used_by, list):
-            process(raw_used_by)
-        else:
-            process(raw_used_by.split(', '))
+            self._modules[item.name.lower()] = item
 
     @classmethod
     def from_json(cls, data: List[Union[str, List[str]]]) -> UsedByType:
@@ -121,21 +118,20 @@ class UsedBy:
     @property
     def ordered(self) -> List[UsedByModule]:
         """Return an ordered list."""
-        result = sorted(self._modules.values(), key=lambda x: x.name.lower())
+        result: List[UsedByModule] = []
+        result_last: List[UsedByModule] = []
 
-        usage: List[UsedByModule] = []
-        usage_last: List[UsedByModule] = []
-        for item in result:
+        for item in sorted(self._modules.values(), key=lambda x: x.name.lower()):
             if item == '?????':
-                usage_last.append(item)
+                result_last.append(item)
                 continue
 
             if item == PROJECT_MODULE:
-                usage.insert(0, item)
+                result.insert(0, item)
             else:
-                usage.append(item)
+                result.append(item)
 
-        return usage + usage_last
+        return result + result_last
 
     @staticmethod
     def _to_key(item: KeyType) -> str:
@@ -199,13 +195,13 @@ class UsedBy:
         if self.unused:
             return f'`{self._UNUSED}`'
 
-        return ', '.join([str(item) for item in self.ordered])
+        return ', '.join(str(item) for item in self.ordered)
 
     def __repr__(self) -> str:
-        data = ', '.join([
+        data = ', '.join((
             repr(' '.join(item) if isinstance(item, list) else item)
             for item in self.json()
-        ])
+        ))
         return f'{self.__class__.__name__}({data})'
 
 
