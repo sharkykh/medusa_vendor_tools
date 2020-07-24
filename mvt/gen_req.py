@@ -4,6 +4,7 @@
 import sys
 from pathlib import Path
 
+from . import PROJECT_MODULE
 from .models import VendoredLibrary
 from .parse import parse_requirements
 
@@ -19,7 +20,7 @@ def generate_requirements(infile: str, outfile: str, all_packages: bool = False,
             print(str(error), file=sys.stderr)
             continue
 
-        if not all_packages and not (req.used_by_medusa or req.git):
+        if not all_packages and not (PROJECT_MODULE in req.usage or req.git):
             continue
 
         requirements.append(req)

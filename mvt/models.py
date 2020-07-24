@@ -301,10 +301,6 @@ class VendoredLibrary:
         return self.main_module.endswith('.py')
 
     @property
-    def used_by_medusa(self) -> bool:
-        return PROJECT_MODULE in self.usage
-
-    @property
     def updatable(self) -> bool:
         if self.git:
             if not self.url:
