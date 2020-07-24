@@ -458,7 +458,7 @@ def run_dependency_checks(
     for req in requirements:
         # Does this library use the installed package?
         if req in dependents and req not in installed.usage:
-            print(f'Adding `{req.name}` to the "usage" column of `{installed.name}`')
+            print(f'Adding `{req.name}` to the "used by" column of `{installed.name}`')
             installed.usage.add(req)
             dependents.remove(req)
 
@@ -493,7 +493,7 @@ def run_dependency_checks(
                 print(f'Need to update `{dep_req_name}` from {dep_req_ver} to match specifier: {dep.specifier}')
 
         if installed not in dep_req.usage:
-            print(f'Adding `{installed.name}` to the "usage" column of `{dep_req_name}`')
+            print(f'Adding `{installed.name}` to the "used by" column of `{dep_req_name}`')
             dep_req.usage.add(installed)
 
             dep_req.usage.remove(UsedBy.UPDATE_ME, ignore_errors=True)
@@ -504,7 +504,7 @@ def run_dependency_checks(
         if d.name.lower() == PROJECT_MODULE.lower():
             d.name = PROJECT_MODULE
         if d not in installed.usage:
-            print(f'Adding `{d.name}` to the "usage" column of `{installed.name}`')
+            print(f'Adding `{d.name}` to the "used by" column of `{installed.name}`')
             installed.usage.add(d)
             dependents.remove(d)
 
