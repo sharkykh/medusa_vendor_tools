@@ -80,7 +80,7 @@ class UsedBy:
         #   **`medusa`** (via `beautifulsoup4`), `subliminal` (cli only), `requests`
         #   `<UNUSED>`
         #   `<UPDATE-ME>`
-        self.modules: Dict[str, UsedByModule] = {}
+        self._modules: Dict[str, UsedByModule] = {}
 
         if not raw_used_by:
             return
@@ -90,10 +90,10 @@ class UsedBy:
                 item = UsedByModule(raw_item)
 
                 if item.match(self._UNUSED):
-                    self.modules = {}
+                    self._modules = {}
                     return
 
-                self.modules[item.name.lower()] = item
+                self._modules[item.name.lower()] = item
 
         if isinstance(raw_used_by, list):
             process(raw_used_by)
@@ -121,7 +121,7 @@ class UsedBy:
     @property
     def ordered(self) -> List[UsedByModule]:
         """Return an ordered list."""
-        result = sorted(self.modules.values(), key=lambda x: x.name.lower())
+        result = sorted(self._modules.values(), key=lambda x: x.name.lower())
 
         usage: List[UsedByModule] = []
         usage_last: List[UsedByModule] = []
@@ -161,17 +161,17 @@ class UsedBy:
 
         key = value.name.lower()
 
-        if key in self.modules:
+        if key in self._modules:
             raise KeyError(f'{value.name} already exists!')
 
-        self.modules[key] = value
+        self._modules[key] = value
 
     def remove(self, item: KeyType, ignore_errors: bool = False) -> UsedByModule:
         """Remove from usage."""
         key = self._to_key(item)
         try:
-            item = self.modules[key]
-            del self.modules[key]
+            item = self._modules[key]
+            del self._modules[key]
             return item
         except KeyError:
             if not ignore_errors:
@@ -179,21 +179,21 @@ class UsedBy:
 
     def __contains__(self, item: KeyType) -> bool:
         key = self._to_key(item)
-        return key in self.modules
+        return key in self._modules
 
     def __getitem__(self, item: GetItemKeyType) -> Union[UsedByModule, List[UsedByModule]]:
         if isinstance(item, (int, slice)):
             return self.ordered[item]
 
         key = self._to_key(item)
-        return self.modules[key]
+        return self._modules[key]
 
     def __iter__(self) -> Iterator[UsedByModule]:
         for item in self.ordered:
             yield item
 
     def __len__(self) -> int:
-        return len(self.modules)
+        return len(self._modules)
 
     def __str__(self) -> str:
         if self.unused:
