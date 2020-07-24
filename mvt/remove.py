@@ -8,6 +8,7 @@ from typing import (
 )
 
 from . import parse as parse_md
+from ._utils import package_module_paths
 from .gen_req import generate_requirements
 from .make_md import make_md
 from .models import VendoredLibrary
@@ -73,19 +74,7 @@ def remove(listfile: str, package: str) -> None:
     print('\n======================\n')
 
     # Remove vendored folder(s)/file(s) using info from `[target]/readme.md`
-    package_modules: List[Path] = []
-    for folder in req.folder:
-        target_path: Path = root / folder
-        for module in req.modules:
-            module_path: Path = (target_path / module).resolve()
-            # Make sure we're not removing anything outside the target folder!
-            if target_path not in module_path.parents:
-                raise Exception(
-                    'Stopping before removal of files outside target folder!'
-                    f' - {module_path} is not within {target_path}'
-                )
-            package_modules.append(module_path)
-
+    package_modules = package_module_paths(req, root)
     modules_csv = ', '.join(map(str, package_modules))
     print(f'Removing: [{modules_csv}]')
     try:

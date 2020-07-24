@@ -28,6 +28,7 @@ from . import (
     PROJECT_MODULE,
     parse as parse_md,
 )
+from ._utils import package_module_paths
 from .gen_req import generate_requirements
 from .get_setup_kwargs import get_setup_kwargs
 from .make_md import make_md
@@ -51,7 +52,7 @@ MIN_PYTHON_3 = '3.5.2'
 # name@https://github.com/:owner/:repo/archive/:commit-ish.tar.gz
 # Can also use `zip` in place of `tar.gz`, `#egg=name` is not needed if using `name @` prefix
 GITHUB_URL_PATTERN: Pattern = re.compile(r'github\.com/(?P<slug>.+?/.+?)/[^/]+?/(?P<commit_ish>.+?)(?:\.tar\.gz|\.zip)?(?:#|$)', re.IGNORECASE)
-NAMESPACE_PACKAGE_PATTERN: Pattern = re.compile(r'__path__\s*=.*?extend_path\(__path__, __name__\)')
+NAMESPACE_PACKAGE_PATTERN: Pattern = re.compile(r'__path__\s*=.*?extend_path\(__path__,\s*__name__\)')
 
 
 # Main method
@@ -83,19 +84,7 @@ def vendor(
 
     if req:
         # Remove old folder(s)/file(s) first using info from `[target]/readme.md`
-        package_modules: List[Path] = []
-        for folder in req.folder:
-            target_path: Path = root / folder
-            for module in req.modules:
-                module_path: Path = (target_path / module).resolve()
-                # Make sure we're not removing anything outside the target folder!
-                if target_path not in module_path.parents:
-                    raise Exception(
-                        'Stopping before removal of files outside target folder!'
-                        f' - {module_path} is not within {target_path}'
-                    )
-                package_modules.append(module_path)
-
+        package_modules = package_module_paths(req, root)
         modules_csv = ', '.join(map(str, package_modules))
         print(f'Removing: [{modules_csv}]')
         try:
