@@ -8,6 +8,7 @@ from typing import (
     Dict,
     Iterable,
     List,
+    Type,
     TypeVar,
     Union,
 )
@@ -20,6 +21,8 @@ VendoredLibraryType = TypeVar('VendoredLibraryType', bound='VendoredLibrary')
 
 KeyType = Union[VendoredLibraryType, UsedByModuleType, str]
 GetItemKeyType = Union[KeyType, int, slice]
+
+UsedByModuleJSONType = Union[str, List[str]]
 
 
 class UsedByModule:
@@ -40,14 +43,14 @@ class UsedByModule:
         self.extra = extra
 
     @classmethod
-    def from_json(cls, data: Union[str, List[str]]) -> UsedByModuleType:
-        try:
+    def from_json(cls: Type[UsedByModuleType], data: UsedByModuleJSONType) -> UsedByModuleType:
+        if isinstance(data, list):
             name, extra = data
-            return cls(name + ' ' + extra)
-        except ValueError:
-            return cls(data)
+            data = f'{name} {extra}'
 
-    def json(self) -> Union[str, List[str]]:
+        return cls(data)
+
+    def json(self) -> UsedByModuleJSONType:
         if self.extra:
             return [self.name, self.extra]
         return self.name
@@ -98,7 +101,7 @@ class UsedBy:
             self._modules[item.name.lower()] = item
 
     @classmethod
-    def from_json(cls, data: List[Union[str, List[str]]]) -> UsedByType:
+    def from_json(cls: Type[UsedByType], data: List[UsedByModuleJSONType]) -> UsedByType:
         result = cls()
 
         for raw_item in data:
@@ -107,7 +110,7 @@ class UsedBy:
 
         return result
 
-    def json(self) -> List[str]:
+    def json(self) -> List[UsedByModuleJSONType]:
         return [item.json() for item in self.ordered]
 
     @property
@@ -222,12 +225,12 @@ class VendoredLibrary:
     GIT_REPLACE_PATTERN = re.compile(r'/(?:tree|commits?)/', re.IGNORECASE)
 
     @classmethod
-    def from_json(cls, data: Dict[str, Any]) -> VendoredLibraryType:
+    def from_json(cls: Type[VendoredLibraryType], data: Dict[str, Any]) -> VendoredLibraryType:
         item = data.copy()
         item['usage'] = UsedBy.from_json(item['usage'])
         return cls(**item)
 
-    def json(self) -> OrderedDict:
+    def json(self) -> Dict[str, Any]:
         return OrderedDict([
             ('folder', self.folder),
             ('name', self.name),

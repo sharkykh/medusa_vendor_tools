@@ -7,6 +7,7 @@ from typing import (
     Iterable,
     List,
     Tuple,
+    Union,
 )
 
 from .models import UsedBy, VendoredLibrary
@@ -63,7 +64,7 @@ class LineParseError(Exception):
         return result
 
 
-def parse_requirements(md_path: Path) -> Iterable[Tuple[VendoredLibrary, LineParseError]]:
+def parse_requirements(md_path: Path) -> Iterable[Union[Tuple[VendoredLibrary, None], Tuple[None, LineParseError]]]:
     """Yields `(VendoredLibrary, None)` or `(None, LineParseError)`."""
     if not md_path.exists():
         return

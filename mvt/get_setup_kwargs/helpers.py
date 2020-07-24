@@ -9,14 +9,14 @@ from contextlib import contextmanager
 
 try:
     from pathlib import Path
-    from typing import Union
+    from typing import Iterator, Union
 except ImportError:
     pass
 
 
 @contextmanager
 def with_working_dir(path):
-    # type: (Union[Path, str]) -> None
+    # type: (Union[Path, str]) -> Iterator[None]
     """Change working directory to `path` and restore when done."""
     try:
         path = path.__fspath__()
@@ -34,7 +34,7 @@ def with_working_dir(path):
 
 @contextmanager
 def add_to_path(path):
-    # type: (Union[Path, str]) -> None
+    # type: (Union[Path, str]) -> Iterator[None]
     """Add `path` to `sys.path` and restore when done."""
     try:
         path = path.__fspath__()
