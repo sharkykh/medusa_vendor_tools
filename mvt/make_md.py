@@ -101,7 +101,7 @@ def main(infile: str, outfile: str):
             outfile = infile
             outpath = inpath
     else:
-        with inpath.open('r') as fh:
+        with inpath.open('r', encoding='utf-8') as fh:
             requirements: List[VendoredLibrary] = json.load(
                 fh,
                 object_hook=VendoredLibrary.from_json,
@@ -109,5 +109,5 @@ def main(infile: str, outfile: str):
 
     data = make_md(requirements)
 
-    with outpath.open('w', newline='\n') as fh:
+    with outpath.open('w', encoding='utf-8', newline='\n') as fh:
         fh.write(''.join(data))

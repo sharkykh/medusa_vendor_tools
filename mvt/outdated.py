@@ -143,7 +143,7 @@ def get_renovate_config(project_path: Path) -> Dict[str, SpecifierSet]:
     if not renovate_json.is_file():
         return {}
 
-    with renovate_json.open() as fh:
+    with renovate_json.open('r', encoding='utf-8') as fh:
         data = json.load(fh)
 
     try:
