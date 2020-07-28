@@ -1,26 +1,28 @@
 # coding: utf-8
 """Sort `ext/readme.md` and `lib/readme.md` by package name."""
 from pathlib import Path
-from typing import (
-    List,
-    Match,
-)
+from typing import List
 
 from .parse import (
+    _parse_package,
+    _split_columns,
     LineParseError,
-    PACKAGE_PATTERN,
+    ParseFailed,
 )
 
 
 def _sort_key(line: str) -> str:
-    line_copy = line[:]
-    line = line.strip()
-    columns: List[str] = line.split(' | ')
+    try:
+        _, raw_package, _, _, _ = _split_columns(line.strip())
+    except ParseFailed:
+        raise LineParseError(line, -1, section='columns')
 
-    match: Match = PACKAGE_PATTERN.match(columns[1])
-    if not match:
-        raise LineParseError(line_copy, -1, columns[1], 'package')
-    return match.group(1).lower()
+    try:
+        name, _ = _parse_package(raw_package)
+    except ParseFailed:
+        raise LineParseError(line, -1, raw_package, 'package')
+
+    return name.lower()
 
 
 def sort_md(file: str) -> None:
