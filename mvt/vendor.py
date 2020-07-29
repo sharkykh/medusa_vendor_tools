@@ -472,9 +472,6 @@ def run_dependency_checks(
 
     # Check that the dependencies are installed (partial),
     #   and that their versions match the new specifier (also partial)
-    req_names: List[str] = [r.name.lower() for r in requirements]
-    # Types for the loop variables
-    dep: Requirement
     for dep in filtered_dependencies:
         try:
             dep_req = requirements[dep.name]
