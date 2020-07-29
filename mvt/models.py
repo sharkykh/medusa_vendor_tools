@@ -1,4 +1,5 @@
 # coding: utf-8
+from __future__ import annotations
 
 import re
 from collections import OrderedDict
@@ -55,7 +56,7 @@ class UsedByModule:
         self.extra = extra
 
     @classmethod
-    def from_json(cls: Type[UsedByModuleType], data: UsedByModuleJSONType) -> UsedByModuleType:
+    def from_json(cls: Type[UsedByModule], data: UsedByModuleJSONType) -> UsedByModule:
         if isinstance(data, list):
             name, extra = data
             data = f'{name} {extra}'
@@ -113,7 +114,7 @@ class UsedBy:
             self._modules[item.name.lower()] = item
 
     @classmethod
-    def from_json(cls: Type[UsedByType], data: List[UsedByModuleJSONType]) -> UsedByType:
+    def from_json(cls: Type[UsedBy], data: List[UsedByModuleJSONType]) -> UsedBy:
         result = cls()
 
         for raw_item in data:
@@ -226,7 +227,7 @@ class VendoredLibrary:
     GIT_REPLACE_PATTERN = re.compile(r'/(?:tree|commits?)/', re.IGNORECASE)
 
     @classmethod
-    def from_json(cls: Type[VendoredLibraryType], data: Dict[str, Any]) -> VendoredLibraryType:
+    def from_json(cls: Type[VendoredLibrary], data: Dict[str, Any]) -> VendoredLibrary:
         item = data.copy()
         item['usage'] = UsedBy.from_json(item['usage'])
         return cls(**item)
@@ -319,7 +320,7 @@ class VendoredList:
         self._items: Dict[str, VendoredLibrary] = {}
 
     @classmethod
-    def from_json(cls: Type[VendoredListType], data: List[Dict[str, Any]]) -> VendoredListType:
+    def from_json(cls: Type[VendoredList], data: List[Dict[str, Any]]) -> VendoredList:
         result = cls()
 
         for raw_item in data:
