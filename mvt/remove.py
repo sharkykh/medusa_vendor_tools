@@ -48,10 +48,10 @@ def remove(listfile: str, package: str) -> None:
 
         # Warn about packages using `req`:
         if dep in req.usage:
-            still_used.append(r)
+            still_used.append(dep)
 
-        # if `r` used by `req`
-        # remove `req.name` from `r.usage`
+        # if `dep` used by `req`
+        # remove `req.name` from `dep.usage`
         if req not in dep.usage:
             continue
 
