@@ -78,7 +78,7 @@ def remove(listfile: str, package: str) -> None:
         pass
 
     # Remove from list
-    del requirements[req]
+    requirements.remove(req)
 
     readme_name = '/'.join(listpath.parts[-2:])
     print(f'Updating {readme_name}')
