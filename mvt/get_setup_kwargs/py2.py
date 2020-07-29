@@ -52,7 +52,7 @@ def import_setup_from_path_once(setup_path, as_main=True):
 
 
 def get_setup_kwargs(setup_path, **mocks):
-    # type: (Path, Any) -> Mapping[Any, Any]
+    # type: (Path, Any) -> Mapping[Any, Any]  # noqa: F821
     sys_platform = mocks.pop('sys_platform', sys.platform)  # type: str
     platform_system = mocks.pop('platform_system', platform.system())  # type: str
 

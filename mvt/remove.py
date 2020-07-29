@@ -1,6 +1,5 @@
 # coding: utf-8
 """Remove vendored library by name."""
-import shutil
 from pathlib import Path
 
 from ._utils import (
@@ -100,4 +99,3 @@ def remove(listfile: str, package: str) -> None:
         )
 
     print('Done!')
-

@@ -95,7 +95,7 @@ def main(args=None):
 
     # Command: sort
     sort_help = 'Sort `ext/readme.md` and `lib/readme.md` by package name.'
-    sort_parser = subparsers.add_parser('sort', help=sort_help, description=sort_help)
+    sort_parser = subparsers.add_parser('sort', help=sort_help, description=sort_help)  # noqa: F841
 
     # Command: make
     make_help = 'Generate `ext/readme.md` from `requirements.json` or from itself.'

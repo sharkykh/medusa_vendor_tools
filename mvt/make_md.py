@@ -7,7 +7,6 @@ from typing import List
 from .__main__ import DEFAULT_EXT_README
 from ._utils import load_requirements
 from .models import (
-    UsedBy,
     VendoredLibrary,
     VendoredList,
 )

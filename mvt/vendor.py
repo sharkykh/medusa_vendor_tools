@@ -51,7 +51,10 @@ MIN_PYTHON_3 = '3.5.2'
 # https://codeload.github.com/:owner/:repo/tar.gz/:commit-ish#egg=name
 # name@https://github.com/:owner/:repo/archive/:commit-ish.tar.gz
 # Can also use `zip` in place of `tar.gz`, `#egg=name` is not needed if using `name @` prefix
-GITHUB_URL_PATTERN: Pattern = re.compile(r'github\.com/(?P<slug>.+?/.+?)/[^/]+?/(?P<commit_ish>.+?)(?:\.tar\.gz|\.zip)?(?:#|$)', re.IGNORECASE)
+GITHUB_URL_PATTERN: Pattern = re.compile(
+    r'github\.com/(?P<slug>.+?/.+?)/[^/]+?/(?P<commit_ish>.+?)(?:\.tar\.gz|\.zip)?(?:#|$)',
+    re.IGNORECASE
+)
 NAMESPACE_PACKAGE_PATTERN: Pattern = re.compile(r'__path__\s*=.*?extend_path\(__path__,\s*__name__\)')
 
 
@@ -519,7 +522,8 @@ def install(
     parsed_package: Requirement,
     py2: bool = False
 ) -> VendoredLibrary:
-    """Install package from `source_dir` into `vendor_dir` using pip, and return a vendored package object and a list of dependencies."""
+    """Install package from `source_dir` into `vendor_dir` using pip,
+    and return a vendored package object and a list of dependencies."""
     print(f'Installing vendored library `{parsed_package.name}` to `{vendor_dir.name}`')
 
     # Create the temp install folder

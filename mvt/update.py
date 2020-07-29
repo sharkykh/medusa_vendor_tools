@@ -2,10 +2,7 @@
 """Update already-vendored library by name."""
 import sys
 from pathlib import Path
-from typing import (
-    Optional,
-    Union,
-)
+from typing import Union
 
 from .__main__ import DEFAULT_EXT_README
 from .parse import parse_requirements

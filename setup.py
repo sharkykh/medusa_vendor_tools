@@ -12,7 +12,10 @@ except ImportError:
 setup(
     name='mvt',
     version=__version__,
-    description='medusa_vendor_tools :: Tools for dealing with the vendored libraries and requirement lists in pymedusa/Medusa',
+    description=(
+        'medusa_vendor_tools :: Tools for dealing with the vendored libraries'
+        ' and requirement lists in pymedusa/Medusa'
+    ),
     long_description=long_description,
     long_description_content_type='text/markdown',
     url='https://github.com/sharkykh/medusa_vendor_tools',
