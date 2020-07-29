@@ -107,6 +107,12 @@ def vendor(
     else:
         print(f'Package {package_name} not found in list, assuming new package')
         install_folders = None
+        if not dependents:
+            print()
+            answer = input(f'Provide a comma-separated list of packages that depend on `{package_name}`:\n  > ').strip()
+            if answer:
+                dependents: List[str] = [x.strip() for x in answer.split(',') if x.strip()]
+            print()
 
     # Download source code (removed later)
     download_target: Path = root / '.mvt-temp'
