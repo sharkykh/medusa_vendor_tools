@@ -14,8 +14,9 @@ Tools for dealing with the vendored libraries and requirement lists in [**pymedu
 ##### Additionally, for the `vendor`/`update` command:
 - [Python Launcher (`py`)](https://docs.python.org/3/using/windows.html#launcher) installed and in PATH
 - Latest Python 2.7 installed and executable using `py -2.7`
-- `pip` tool installed
+- `pip` tool installed for both Python versions
 - [`setuptools`](https://pypi.org/project/setuptools) library installed
+- [`mock`](https://pypi.org/project/mock) library installed **for Python 2.7**
 ##### Additionally, for the `outdated` command:
 - [`requests`](https://pypi.org/project/requests) library installed
 
