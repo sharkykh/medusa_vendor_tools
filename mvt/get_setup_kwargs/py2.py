@@ -56,8 +56,8 @@ def get_setup_kwargs(setup_path, **mocks):
     sys_platform = mocks.pop('sys_platform', sys.platform)  # type: str
     platform_system = mocks.pop('platform_system', platform.system())  # type: str
 
-    @patch('setuptools.setup')
     @patch('distutils.core.setup')
+    @patch('setuptools.setup')
     @patch.object(sys, 'platform', sys_platform)
     @patch.object(platform, 'system', lambda: platform_system)
     def import_and_get_kwargs(mocked_setup, mocked_du_setup):

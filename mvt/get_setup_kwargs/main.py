@@ -67,8 +67,8 @@ def get_setup_kwargs(setup_path: Path, discard_unwanted=True, **mocks: Any) -> M
     assert len(python_version) == 3, 'Please provide a tuple with at least 3 integers for the version'
     python_version = version_info(*python_version[:3])
 
-    @patch('setuptools.setup')
     @patch('distutils.core.setup')
+    @patch('setuptools.setup')
     @patch.object(sys, 'version_info', python_version)
     @patch.object(sys, 'platform', sys_platform)
     @patch.object(platform, 'system', lambda: platform_system)
