@@ -559,7 +559,7 @@ def install(
 
     # Drop interpreter and OS specific files.
     remove_all(temp_install_dir.glob('**/*.pyd'))
-    remove_all(temp_install_dir.glob('msgpack/*.so'))
+    remove_all(temp_install_dir.glob('**/*.so'))
 
     # Get installed package
     working_set = pkg_resources.WorkingSet([str(temp_install_dir)])  # Must be a list to work
