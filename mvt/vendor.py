@@ -24,6 +24,7 @@ from pkg_resources._vendor.packaging.markers import Marker
 from . import PROJECT_MODULE
 from ._utils import (
     drop_dir,
+    get_py_executable,
     load_requirements,
     package_module_paths,
     remove_all,
@@ -243,7 +244,7 @@ def download_source(parsed_package: Requirement, download_target: Path, py2: boo
 def executable(py2: bool) -> List[str]:
     if py2:
         # Use "Python Launcher for Windows" (available since Python 3.3)
-        return ['py', '-2.7']
+        return [get_py_executable(), '-2.7']
 
     # Use currently running Python version (3.7+)
     return [sys.executable]

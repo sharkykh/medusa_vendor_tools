@@ -1,5 +1,6 @@
 # coding: utf-8
 """Utility functions."""
+import os
 import shutil
 from pathlib import Path
 from typing import List
@@ -9,6 +10,25 @@ from .models import (
     VendoredList,
 )
 from .parse import parse_requirements
+
+
+def get_py_executable() -> str:
+    if os.name == 'nt':
+        return 'py'
+
+    py_path: Path = Path(__file__).parent / 'tools' / 'py'
+
+    # Use Unix `py` tool
+    # Make sure it is executable
+    import stat
+    cur_mode = py_path.stat().st_mode
+    if not (cur_mode & stat.S_IEXEC):
+        answer = input(f'Needs to execute: {py_path}, OK? [y/N] ')
+        if not answer or answer.lower() != 'y':
+            raise Exception('Unable to execute Unix `py` tool, requires user consent.')
+        py_path.chmod(cur_mode | stat.S_IEXEC)
+
+    return str(py_path)
 
 
 def load_requirements(listpath: Path, ignore_errors: bool = False) -> VendoredList:

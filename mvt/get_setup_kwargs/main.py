@@ -22,6 +22,7 @@ from unittest.mock import (
     patch,
 )
 
+from .._utils import get_py_executable
 from .helpers import (
     add_to_path,
     with_working_dir,
@@ -146,7 +147,7 @@ def run_in_python2(data: Mapping) -> Mapping:
         raise Exception('Unable to find the correct working directory.')
 
     result = subprocess.run(
-        ['py', '-2.7', '-m', dotted_name],
+        [get_py_executable(), '-2.7', '-m', dotted_name],
         cwd=cwd,
         encoding='utf-8',
         universal_newlines=True,

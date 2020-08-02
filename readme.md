@@ -7,12 +7,12 @@ Tools for dealing with the vendored libraries and requirement lists in [**pymedu
 - They are made to be used on Medusa's `develop` branch and feature branches targeting `develop`.
 - Their documentation isn't great.
 - They are **far from perfect**, and you should always verify the changes before committing / pushing them.
-- They are targeted towards Windows.
+- They are targeted towards Windows, but Unix/POSIX should work too.
 
 ## Requirements
 - Python 3.7 or later
 ##### Additionally, for the `vendor`/`update` command:
-- [Python Launcher (`py`)](https://docs.python.org/3/using/windows.html#launcher) installed and in PATH
+- (Windows) [Python Launcher (`py`)](https://docs.python.org/3/using/windows.html#launcher) installed and in PATH
 - Latest Python 2.7 installed and executable using `py -2.7`
 - `pip` tool installed for both Python versions
 - [`setuptools`](https://pypi.org/project/setuptools) library installed
