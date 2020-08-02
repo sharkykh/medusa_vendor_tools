@@ -179,3 +179,7 @@ def main(args=None):
             infile=args.infile,
             outfile=args.outfile,
         )
+
+
+if __name__ == '__main__':
+    main()
