@@ -33,6 +33,7 @@ setup(
     ],
     packages=find_packages(),
     package_data={'mvt': ['tools/*']},
+    zip_safe=True,
     python_requires='>=3.7.0',
     install_requires=[
         'pip >=19.1.1',
