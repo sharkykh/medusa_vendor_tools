@@ -120,31 +120,35 @@ class EndOfList(Exception):
 
 class LineParseError(Exception):
     """Raised when unable to parse a vendored library line."""
-    def __init__(self, line: str, line_no: int, part: str = None, section: str = None):
+    def __init__(self, line: str, line_no: int, section: str, part: str = None):
         self.line = line
         self.line_no = line_no
-        self.part = part
         self.section = section
+        self.part = part
 
     def __str__(self) -> str:
-        failed_header = 'Failed to parse {0} on line {1}:'.format(self.section or 'line', self.line_no or '?')
-        line_header = 'Full line ({0}):'.format(self.line_no)
+        if self.line_no:
+            failed_header = f'Failed to parse {self.section} on line {self.line_no}:'
+            line_header = f'Full line ({self.line_no}):'
+        else:
+            failed_header = f'Failed to parse {self.section}:'
+            line_header = 'Full line:'
 
         width = 36
         spacer = '=' * (width + 4)
 
         result = '\n'
-        result += spacer + '\n'
-        result += '| {0:^{width}} |\n'.format(failed_header, width=width)
-        result += spacer + '\n'
+        result += f'{spacer}\n'
+        result += f'| {failed_header.center(width)} |\n'
+        result += f'{spacer}\n'
 
         if self.part:
-            result += self.part + '\n'
-            result += spacer + '\n'
-            result += '| {0:^{width}} |\n'.format(line_header, width=width)
-            result += spacer + '\n'
+            result += f'{self.part}\n'
+            result += f'{spacer}\n'
+            result += f'| {line_header.center(width)} |\n'
+            result += f'{spacer}\n'
 
-        result += self.line + '\n'
+        result += f'{self.line}\n'
         result += spacer
 
         return result
@@ -163,13 +167,13 @@ def _parse_line(line: str, line_no: int) -> LineResultType:
     try:
         raw_folder, raw_package, raw_version, raw_usage, raw_notes = _split_columns(line)
     except ParseFailed:
-        return None, LineParseError(line, line_no, section='columns')
+        return None, LineParseError(line, line_no, 'columns')
 
     # Folder
     try:
         folder = _parse_folder(raw_folder)
     except ParseFailed:
-        return None, LineParseError(line, line_no, raw_folder, 'folder')
+        return None, LineParseError(line, line_no, 'folder', raw_folder)
 
     # Usage
     usage = UsedBy(raw_usage)
@@ -178,19 +182,19 @@ def _parse_line(line: str, line_no: int) -> LineResultType:
     try:
         name, extras = _parse_package(raw_package)
     except ParseFailed:
-        return None, LineParseError(line, line_no, raw_package, 'package')
+        return None, LineParseError(line, line_no, 'package', raw_package)
 
     # Split version to: Version, URL, Git, Branch
     try:
         version, url, git, branch = _parse_version(raw_version)
     except ParseFailed:
-        return None, LineParseError(line, line_no, raw_version, 'version')
+        return None, LineParseError(line, line_no, 'version', raw_version)
 
     if git and not version:
         try:
             version = _parse_url_for_commit_hash(url)
         except ParseFailed:
-            return None, LineParseError(line, line_no, url, 'url')
+            return None, LineParseError(line, line_no, 'url', url)
 
     # Split notes to: Notes, Modules
     notes, modules = _parse_notes(raw_notes)

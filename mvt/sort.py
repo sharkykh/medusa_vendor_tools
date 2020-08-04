@@ -15,12 +15,12 @@ def _sort_key(line: str) -> str:
     try:
         _, raw_package, _, _, _ = _split_columns(line.strip())
     except ParseFailed:
-        raise LineParseError(line, -1, section='columns')
+        raise LineParseError(line, -1, 'columns')
 
     try:
         name, _ = _parse_package(raw_package)
     except ParseFailed:
-        raise LineParseError(line, -1, raw_package, 'package')
+        raise LineParseError(line, -1, 'package', raw_package)
 
     return name.lower()
 
