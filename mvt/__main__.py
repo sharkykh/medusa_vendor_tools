@@ -39,7 +39,7 @@ def main(args=None):
     update_parser.add_argument('package', help='Package name to update')
     update_parser.add_argument(
         '-c', '--cmd', action='store_true',
-        help=f'Generate a `vendor` command for the provided package (does not update)'
+        help='Generate a `vendor` command for the provided package (does not update)'
     )
     update_parser.add_argument(
         '--pre', action='store_true',
@@ -75,7 +75,7 @@ def main(args=None):
     outdated_parser = subparsers.add_parser('outdated', help=outdated_help, description=outdated_help)
     outdated_parser.add_argument(
         'packages', nargs='*', metavar='package',
-        help=f'Package(s) to check. If not provided, checks all of the packages.'
+        help='Package(s) to check. If not provided, checks all of the packages.'
     )
     outdated_parser.add_argument(
         '-f', '--listfile', default=DEFAULT_EXT_README,
