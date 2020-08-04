@@ -251,7 +251,20 @@ class VendoredLibrary:
         extras = ','.join(self.extras)
         return self.name + (f'[{extras}]' if extras else '')
 
+    @property
+    def updatable(self) -> bool:
+        if not self.url:
+            return False
+
+        if self.git and '/blob/' in self.url:
+            return False
+
+        return True
+
     def as_requirement(self) -> str:
+        if not self.updatable:
+            return
+
         if self.git:
             if 'github.com' in self.url:
                 # https://codeload.github.com/:org/:repo/tar.gz/:commit-ish
@@ -264,6 +277,9 @@ class VendoredLibrary:
             return f'{self.package}=={self.version}{self.markers}'
 
     def as_update_requirement(self) -> str:
+        if not self.updatable:
+            return
+
         if self.git:
             if 'github.com' in self.url:
                 # https://github.com/:org/:repo/archive/:commit-ish.tar.gz
@@ -300,16 +316,6 @@ class VendoredLibrary:
     def is_main_module_file(self) -> bool:
         """Is the main module a file? (*.py)"""
         return self.main_module.endswith('.py')
-
-    @property
-    def updatable(self) -> bool:
-        if self.git:
-            if not self.url:
-                return False
-            if '/blob/' in self.url:
-                return False
-
-        return True
 
     def __str__(self) -> str:
         return self.name
