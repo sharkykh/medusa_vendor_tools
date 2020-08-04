@@ -2,7 +2,6 @@
 """Helper functions to generate vendor readme.md files from JSON spec."""
 import json
 from pathlib import Path
-from typing import List
 
 from .__main__ import DEFAULT_EXT_README
 from ._utils import load_requirements
@@ -61,32 +60,32 @@ def make_list_item(req: VendoredLibrary):
     return ' | '.join((folder, package, version, usage, notes))
 
 
-def make_md(requirements: VendoredList) -> List[str]:
+def make_md(requirements: VendoredList) -> str:
     folder = requirements.folder
 
     # Header
     data = [
-        f'## {folder}\n',
-        'Folder | Package | Version / Commit | Used By | Notes / Modules\n',
-        ':----: | :-----: | :--------------: | :------ | :--------------\n',
+        f'## {folder}',
+        'Folder | Package | Version / Commit | Used By | Notes / Modules',
+        ':----: | :-----: | :--------------: | :------ | :--------------',
     ]
 
     # Items
     data += [
-        make_list_item(req) + '\n'
+        make_list_item(req)
         for req in requirements
     ]
 
     # Footer
     data += [
-        '\n',
-        '#### Notes:\n',
-        f'- `{folder}` compatible with Python 2 and Python 3\n',
-        f'- `{folder}2` only compatible with Python 2\n',
-        f'- `{folder}3` only compatible with Python 3\n',
+        '',
+        '#### Notes:',
+        f'- `{folder}` compatible with Python 2 and Python 3',
+        f'- `{folder}2` only compatible with Python 2',
+        f'- `{folder}3` only compatible with Python 3',
     ]
 
-    return data
+    return '\n'.join(data) + '\n'
 
 
 def main(infile: str, outfile: str):
@@ -106,4 +105,4 @@ def main(infile: str, outfile: str):
     data = make_md(requirements)
 
     with outpath.open('w', encoding='utf-8', newline='\n') as fh:
-        fh.write(''.join(data))
+        fh.write(data)

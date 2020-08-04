@@ -175,7 +175,7 @@ def vendor(
         listpath.parent.mkdir(parents=True, exist_ok=True)
 
     with listpath.open('w', encoding='utf-8', newline='\n') as fh:
-        fh.write(''.join(md_data))
+        fh.write(md_data)
 
     if target == 'ext':
         print('Updating requirements.txt')
