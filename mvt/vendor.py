@@ -66,7 +66,8 @@ def vendor(
     dependents: List[str],
     py2: bool,
     py3: bool,
-    py6: bool
+    py6: bool,
+    pre_releases: bool,
 ) -> None:
     listpath = Path(listfile).resolve()
     root = listpath.parent.parent
@@ -120,7 +121,7 @@ def vendor(
     temp_install_dir: Path = download_target / '__install__'
 
     try:
-        source_archive = download_source(parsed_package, download_target, py2=py2, py3=py3)
+        source_archive = download_source(parsed_package, download_target, py2=py2, py3=py3, pre_releases=pre_releases)
         extracted_source, source_commit_hash = extract_source(source_archive)
         setup_py_results = check_setup_py(extracted_source, py2=py2, py3=py3)
     except InstallFailed as error:
@@ -208,7 +209,13 @@ def parse_input(package: str) -> Requirement:
     raise ValueError(f'Unable to parse {package}')
 
 
-def download_source(parsed_package: Requirement, download_target: Path, py2: bool = False, py3: bool = False) -> Path:
+def download_source(
+    parsed_package: Requirement,
+    download_target: Path,
+    py2: bool = False,
+    py3: bool = False,
+    pre_releases: bool = False,
+) -> Path:
     remove_all(download_target.glob('**/*'))
     download_target.mkdir(exist_ok=True)
 
@@ -217,10 +224,11 @@ def download_source(parsed_package: Requirement, download_target: Path, py2: boo
     print(f'Downloading source for {parsed_package.name}')
 
     no_cache = ['--no-cache-dir'] if parsed_package.url else []
+    pre = ['--pre'] if pre_releases else []
 
     with_py2 = py2 and not py3
     args: List[str] = executable(with_py2) + [
-        '-m', 'pip', '--no-python-version-warning', 'download', '--no-binary', ':all:', '--no-deps', *no_cache,
+        '-m', 'pip', '--no-python-version-warning', 'download', '--no-binary', ':all:', '--no-deps', *no_cache, *pre,
         '--dest', str(download_target), str(parsed_package),
     ]
     if with_py2:

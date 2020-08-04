@@ -61,8 +61,10 @@ optional arguments:
   -3, --py3             Force install Python 3 version to [target]3
   -6, --py6             Force install Python 3 version to [target]
   -u [package [package ...]], --usage [package [package ...]]
-                        Packages that use this library (to add to the usage
+                        Packages that use this library (to add to the used by
                         column)
+  --pre                 Include pre-release and development versions. By
+                        default, pip only finds stable versions.
   -f LISTFILE, --listfile LISTFILE
                         List file to update (affects target folders). Defaults
                         to `ext/readme.md`
@@ -80,6 +82,8 @@ optional arguments:
   -h, --help            show this help message and exit
   -c, --cmd             Generate a `vendor` command for the provided package
                         (does not update)
+  --pre                 Include pre-release and development versions. By
+                        default, pip only finds stable versions.
   -f LISTFILE, --listfile LISTFILE
                         List file to update (affects target folders). Defaults
                         to `ext/readme.md`

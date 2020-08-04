@@ -9,7 +9,7 @@ from .parse import parse_requirements
 from .vendor import vendor
 
 
-def update(listfile: Union[Path, str], package: str, cmd: bool) -> None:
+def update(listfile: Union[Path, str], package: str, cmd: bool, pre_releases: bool) -> None:
     if not isinstance(listfile, Path):
         listfile = Path(listfile)
 
@@ -37,11 +37,18 @@ def update(listfile: Union[Path, str], package: str, cmd: bool) -> None:
 
     if cmd:
         print(f'Vendor command for: `{req.package}`')
-        if listfile.samefile(DEFAULT_EXT_README):
-            print(f'> mvt vendor {req_str}')
-        else:
-            listfile_escaped = f'"{listfile_str}"' if ' ' in listfile_str else listfile_str
-            print(f'> mvt vendor -f {listfile_escaped} {req_str}')
+
+        cmd_args = []
+        if pre_releases:
+            cmd_args.append('--pre')
+        if not listfile.samefile(DEFAULT_EXT_README):
+            cmd_args += [
+                '-f',
+                f'"{listfile_str}"' if ' ' in listfile_str else listfile_str,
+            ]
+        cmd_args.append(req_str)
+
+        print(f"> mvt vendor {' '.join(cmd_args)}")
         return
 
     print(f'Running vendor command for: `{req.package}`')
@@ -56,4 +63,5 @@ def update(listfile: Union[Path, str], package: str, cmd: bool) -> None:
         py2=False,
         py3=False,
         py6=False,
+        pre_releases=pre_releases,
     )
