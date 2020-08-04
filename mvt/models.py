@@ -320,6 +320,9 @@ class VendoredLibrary:
     def __str__(self) -> str:
         return self.name
 
+    def __repr__(self) -> str:
+        return f'{self.__class__.__name__}({repr(self.name)})'
+
 
 class VendoredList:
     def __init__(self):
@@ -399,4 +402,5 @@ class VendoredList:
         return len(self._items)
 
     def __repr__(self) -> str:
-        return f'{self.__class__.__name__}({len(self)})'
+        data = ', '.join(repr(item.name) for item in self.ordered)
+        return f'{self.__class__.__name__}[{len(self)}]({data})'
