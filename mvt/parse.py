@@ -222,7 +222,7 @@ def _parse_line(line: str, line_no: int) -> LineResultType:
 def parse_requirements(md_path: Path) -> Iterable[LineResultType]:
     """Yields `(VendoredLibrary, None)` or `(None, LineParseError)`."""
     if not md_path.is_file():
-        return
+        return  # pragma: no cover
 
     with md_path.open('r', encoding='utf-8') as file:
         lines = file.readlines()
@@ -234,6 +234,7 @@ def parse_requirements(md_path: Path) -> Iterable[LineResultType]:
             yield _parse_line(line=line, line_no=line_no)
         except EndOfList:
             break
+    return  # pragma: no cover
 
 
 def test(file):
