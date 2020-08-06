@@ -1,6 +1,5 @@
 # coding: utf-8
 """List outdated packages."""
-import json
 import re
 import sys
 import time
@@ -14,16 +13,12 @@ from typing import (
 )
 
 import requests
+from pkg_resources._vendor.packaging.specifiers import SpecifierSet
 
 from . import __version__ as VERSION
+from ._utils import get_renovate_config
 from .models import VendoredLibrary
 from .parse import parse_requirements
-
-
-try:
-    from pkg_resources._vendor.packaging.specifiers import SpecifierSet
-except ImportError:
-    SpecifierSet = None
 
 
 GITHUB_URL_PATTERN = re.compile(r'github\.com/(?P<slug>.+?/.+?)/', re.IGNORECASE)
@@ -57,6 +52,8 @@ def outdated(listfile: Union[Path, str], packages: List[str]) -> None:
         current = req.version
         latest = None
         constraint = renovate_config.get(name_lower, None)
+        if constraint:
+            constraint = constraint & f'>={req.version}'
 
         if req.git and req.url.startswith('https://github.com'):
             print(f'{req.name}: Checking GitHub...', end=' ')
@@ -133,36 +130,3 @@ def find_latest_github(req: VendoredLibrary) -> str:
     if status == 'identical':
         return data['base_commit']['sha']
     return f'Unknown - different branch? (status: {status})'
-
-
-def get_renovate_config(project_path: Path) -> Dict[str, SpecifierSet]:
-    if not SpecifierSet:
-        return {}
-
-    renovate_json = project_path.joinpath('renovate.json')
-    if not renovate_json.is_file():
-        return {}
-
-    with renovate_json.open('r', encoding='utf-8') as fh:
-        data = json.load(fh)
-
-    try:
-        python_config: Dict[str, dict] = data['python']
-        python_pkg_rules: List[Dict[str, Union[List[str], str]]] = python_config['packageRules']
-    except KeyError:
-        return {}
-
-    constraints: Dict[str, str] = {}
-    for rule in python_pkg_rules:
-        try:
-            names: List[str] = rule['packageNames']
-            allowed_versions: str = rule['allowedVersions']
-        except KeyError:
-            continue
-
-        constraints.update({
-            name.lower(): SpecifierSet(allowed_versions)
-            for name in names
-        })
-
-    return constraints

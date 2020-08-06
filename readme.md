@@ -10,15 +10,15 @@ Tools for dealing with the vendored libraries and requirement lists in [**pymedu
 - They are targeted towards Windows, but Unix/POSIX should work too.
 
 ## Requirements
-- Python 3.7 or later
-##### Additionally, for the `vendor`/`update` command:
 - (Windows) [Python Launcher (`py`)](https://docs.python.org/3/using/windows.html#launcher) installed and in PATH
-- Latest Python 2.7 installed and executable using `py -2.7`
-- `pip` tool installed for both Python versions
-- [`setuptools`](https://pypi.org/project/setuptools) library installed
-- [`mock`](https://pypi.org/project/mock) library installed **for Python 2.7**
-##### Additionally, for the `outdated` command:
-- [`requests`](https://pypi.org/project/requests) library installed
+- Python 3.7 or later, with the following pacakges installed:
+  - `pip`
+  - [`setuptools`](https://pypi.org/project/setuptools)
+  - [`requests`](https://pypi.org/project/requests)
+- Latest Python 2.7 in PATH, with the following pacakges installed:
+  - `pip`
+  - [`setuptools`](https://pypi.org/project/setuptools)
+  - [`mock`](https://pypi.org/project/mock)
 
 ## Installation
 **Recommended:** Clone this repository and install in "editable" mode:
@@ -36,7 +36,6 @@ pip install https://github.com/sharkykh/medusa_vendor_tools/archive/master.tar.g
 (can also use `.zip` archive)
 
 ## Usage
-The script requires that you run it within your Medusa's root folder, meaning:
 ```shell
 cd C:\path\to\Medusa
 mvt -h
@@ -48,7 +47,7 @@ mvt <command> [-h | <arguments>]
 #### [`mvt vendor`](/mvt/vendor.py)
 Vendor (or update existing) libraries.
 ```
-usage: mvt vendor [-h] [-2] [-3] [-6] [-u [package [package ...]]]
+usage: mvt vendor [-h] [-2] [-3] [-6] [-u [package [package ...]]] [--pre]
                   [-f LISTFILE]
                   package
 
@@ -73,7 +72,7 @@ optional arguments:
 #### [`mvt update`](/mvt/update.py)
 Update already-vendored library by name.
 ```
-usage: mvt update [-h] [-f LISTFILE] package
+usage: mvt update [-h] [-c] [--pre] [-f LISTFILE] package
 
 positional arguments:
   package               Package name to update
@@ -111,7 +110,7 @@ List outdated packages.
 usage: mvt outdated [-h] [-f LISTFILE] [package [package ...]]
 
 positional arguments:
-  package              Package(s) to check. If not provided, checks all of
+  package               Package(s) to check. If not provided, checks all of
                         the packages.
 
 optional arguments:
@@ -169,14 +168,15 @@ optional arguments:
 ```
 
 #### [`mvt make`](/mvt/make_md.py)
-Generate `ext/readme.md` from `requirements.json`.
+Generate `ext/readme.md` from `requirements.json` or from itself.
 ```
 usage: mvt make [-h] [-i INFILE] [-o OUTFILE]
 
 optional arguments:
   -h, --help            show this help message and exit
   -i INFILE, --infile INFILE
-                        JSON or Markdown input file. Defaults to `requirements.json`
+                        JSON or Markdown input file. Defaults to
+                        `requirements.json`
   -o OUTFILE, --outfile OUTFILE
                         Markdown output file. Defaults to `ext/readme.md`
 ```
@@ -188,4 +188,5 @@ optional arguments:
 - [`ext/readme.md`](https://github.com/pymedusa/Medusa/blob/develop/ext/readme.md) - A listing of the vendored libraries present in the folders above.
 - [`lib`](https://github.com/pymedusa/Medusa/blob/develop/lib) - Vendored libraries whose codes are customized to fit Medusa's needs, and other miscellaneous stuff.
 - [`lib/readme.md`](https://github.com/pymedusa/Medusa/blob/develop/lib/readme.md) - A listing of everything present in the folder above.
-- [`requirements.txt`](https://github.com/pymedusa/Medusa/blob/develop/requirements.txt) - A listing of Medusa's direct dependencies (imported by the `medusa` package). [Renovate](https://github.com/apps/renovate) uses this to provide version updates.
+- [`requirements.txt`](https://github.com/pymedusa/Medusa/blob/develop/requirements.txt) - A listing of Medusa's direct dependencies (imported by the `medusa` package).  
+  [Renovate](https://github.com/apps/renovate) uses this to provide version updates.

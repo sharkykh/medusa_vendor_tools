@@ -1,9 +1,16 @@
 # coding: utf-8
 """Utility functions."""
+import json
 import os
 import shutil
 from pathlib import Path
-from typing import List
+from typing import (
+    Dict,
+    List,
+    Union,
+)
+
+from pkg_resources._vendor.packaging.specifiers import SpecifierSet
 
 from .models import (
     VendoredLibrary,
@@ -73,6 +80,39 @@ def package_module_paths(req: VendoredLibrary, root: Path) -> List[Path]:
                     package_modules.append(ns_path)
 
     return package_modules
+
+
+def get_renovate_config(project_path: Path) -> Dict[str, SpecifierSet]:
+    if not SpecifierSet:
+        return {}
+
+    renovate_json = project_path.joinpath('renovate.json')
+    if not renovate_json.is_file():
+        return {}
+
+    with renovate_json.open('r', encoding='utf-8') as fh:
+        data = json.load(fh)
+
+    try:
+        python_config: Dict[str, dict] = data['python']
+        python_pkg_rules: List[Dict[str, Union[List[str], str]]] = python_config['packageRules']
+    except KeyError:
+        return {}
+
+    constraints: Dict[str, str] = {}
+    for rule in python_pkg_rules:
+        try:
+            names: List[str] = rule['packageNames']
+            allowed_versions: str = rule['allowedVersions']
+        except KeyError:
+            continue
+
+        constraints.update({
+            name.lower(): SpecifierSet(allowed_versions)
+            for name in names
+        })
+
+    return constraints
 
 
 def drop_dir(path: Path, ignore_errors=False, onerror=None):
