@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Union
 
 from .__main__ import DEFAULT_EXT_README
+from ._utils import get_renovate_config
 from .parse import parse_requirements
 from .vendor import vendor
 
@@ -31,6 +32,13 @@ def update(listfile: Union[Path, str], package: str, cmd: bool, pre_releases: bo
         return
 
     requirement = req.as_update_requirement()
+
+    # Check Renovate constaints
+    root = listfile.parent.parent.resolve()
+    constraint = get_renovate_config(root).get(req.name.lower(), None)
+    if constraint:
+        requirement += str(constraint & f'>={req.version}')
+
     req_str = f'"{requirement}"' if ' ' in requirement else requirement
 
     listfile_str = str(listfile)
