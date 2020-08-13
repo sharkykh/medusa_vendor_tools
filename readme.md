@@ -48,7 +48,7 @@ mvt <command> [-h | <arguments>]
 #### [`mvt vendor`](/mvt/vendor.py)
 Vendor (or update existing) libraries.
 ```
-usage: mvt vendor [-h] [-2] [-3] [-6] [-u [package [package ...]]]
+usage: mvt vendor [-h] [-2] [-3] [-6] [-u [package [package ...]]] [--pre]
                   [-f LISTFILE]
                   package
 
@@ -73,7 +73,7 @@ optional arguments:
 #### [`mvt update`](/mvt/update.py)
 Update already-vendored library by name.
 ```
-usage: mvt update [-h] [-f LISTFILE] package
+usage: mvt update [-h] [-c] [--pre] [-f LISTFILE] package
 
 positional arguments:
   package               Package name to update
@@ -111,7 +111,7 @@ List outdated packages.
 usage: mvt outdated [-h] [-f LISTFILE] [package [package ...]]
 
 positional arguments:
-  package              Package(s) to check. If not provided, checks all of
+  package               Package(s) to check. If not provided, checks all of
                         the packages.
 
 optional arguments:
@@ -169,14 +169,15 @@ optional arguments:
 ```
 
 #### [`mvt make`](/mvt/make_md.py)
-Generate `ext/readme.md` from `requirements.json`.
+Generate `ext/readme.md` from `requirements.json` or from itself.
 ```
 usage: mvt make [-h] [-i INFILE] [-o OUTFILE]
 
 optional arguments:
   -h, --help            show this help message and exit
   -i INFILE, --infile INFILE
-                        JSON or Markdown input file. Defaults to `requirements.json`
+                        JSON or Markdown input file. Defaults to
+                        `requirements.json`
   -o OUTFILE, --outfile OUTFILE
                         Markdown output file. Defaults to `ext/readme.md`
 ```
