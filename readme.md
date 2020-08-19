@@ -11,11 +11,11 @@ Tools for dealing with the vendored libraries and requirement lists in [**pymedu
 
 ## Requirements
 - (Windows) [Python Launcher (`py`)](https://docs.python.org/3/using/windows.html#launcher) installed and in PATH
-- Python 3.7 or later, with the following pacakges installed:
+- Python 3.7 or later, with the following packages installed:
   - `pip`
   - [`setuptools`](https://pypi.org/project/setuptools)
   - [`requests`](https://pypi.org/project/requests)
-- Latest Python 2.7 in PATH, with the following pacakges installed:
+- Latest Python 2.7 in PATH, with the following packages installed:
   - `pip`
   - [`setuptools`](https://pypi.org/project/setuptools)
   - [`mock`](https://pypi.org/project/mock)
