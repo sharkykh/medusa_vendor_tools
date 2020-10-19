@@ -9,6 +9,7 @@ from typing import (
     Callable,
     Dict,
     List,
+    Optional,
     Union
 )
 
@@ -74,7 +75,7 @@ def outdated(listfile: Union[Path, str], packages: List[str]) -> None:
             time.sleep(0.3)
 
 
-def find_latest_pypi(req: VendoredLibrary, constraint: SpecifierSet) -> str:
+def find_latest_pypi(req: VendoredLibrary, constraint: Optional[SpecifierSet]) -> str:
     response = session.get(f'https://pypi.org/pypi/{req.name.lower()}/json')
     response.raise_for_status()
     data = response.json()

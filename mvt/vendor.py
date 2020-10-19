@@ -13,6 +13,7 @@ from typing import (
     Mapping,
     Optional,
     Pattern,
+    Tuple,
     Union,
 )
 from zipfile import ZipFile
@@ -34,7 +35,6 @@ from .get_setup_kwargs import get_setup_kwargs
 from .make_md import make_md
 from .models import (
     UsedBy,
-    UsedByModule,
     VendoredLibrary,
     VendoredList,
 )
@@ -42,8 +42,8 @@ from .models import (
 # Typing
 AnyDistribution = Union[
     pkg_resources.Distribution,
-    pkg_resources.DistInfoDistribution,
-    pkg_resources.EggInfoDistribution
+    pkg_resources.DistInfoDistribution,  # type: ignore
+    pkg_resources.EggInfoDistribution  # type: ignore
 ]
 
 MIN_PYTHON_2 = '2.7.10'
@@ -82,6 +82,8 @@ def vendor(
     requirements = load_requirements(listpath)
     target = requirements.folder or listpath.parent.name  # `ext` or `lib`
 
+    used_by = UsedBy(dependents)
+
     try:
         req = requirements[package_name]
     except KeyError:
@@ -109,11 +111,10 @@ def vendor(
     else:
         print(f'Package {package_name} not found in list, assuming new package')
         install_folders = None
-        if not dependents:
+        if not used_by:
             print()
             answer = input(f'Provide a comma-separated list of packages that depend on `{package_name}`:\n  > ').strip()
-            if answer:
-                dependents: List[str] = [x.strip() for x in answer.split(',') if x.strip()]
+            used_by = UsedBy([x.strip() for x in answer.split(',') if x.strip()])
             print()
 
     # Download source code (removed later)
@@ -147,6 +148,11 @@ def vendor(
 
         print(f'Installed: {installed.package}=={installed.version} to {folder}')
 
+    if not installed:
+        # Shouldn't reach here.
+        print('Failed to install')
+        return
+
     installed.folder = install_folders
 
     # Remove downloaded source after installation
@@ -157,7 +163,7 @@ def vendor(
         installed.notes += req.notes
 
     # Dependency checks
-    run_dependency_checks(installed, dependencies, UsedBy(dependents), requirements)
+    run_dependency_checks(installed, dependencies, used_by, requirements)
 
     if not installed.usage:
         installed.usage = UsedBy(UsedBy.UPDATE_ME)
@@ -262,7 +268,7 @@ class SourceDownloadFailed(Exception):
     pass
 
 
-def extract_source(source_path: Path) -> (Path, Optional[str]):
+def extract_source(source_path: Path) -> Tuple[Path, Optional[str]]:
     """Extract the source archive, return the extracted path and optionally the commit hash stored inside."""
     extracted_path = source_path.with_name(source_path.stem)
     commit_hash = None
@@ -447,7 +453,7 @@ def make_list_of_folders(target: str, py2: bool, py3: bool, py6: bool) -> List[s
 def run_dependency_checks(
     installed: VendoredLibrary,
     dependencies: List[Requirement],
-    dependents: UsedBy,
+    used_by: UsedBy,
     requirements: VendoredList,
 ) -> None:
     """
@@ -463,7 +469,7 @@ def run_dependency_checks(
     print('+ Dependency checks +')
     print('+-------------------+')
 
-    installed_pkg_extras = [None] + installed.extras
+    installed_pkg_extras: List[Optional[str]] = [None, *installed.extras]
 
     deps_fmt = '\n  '.join(map(str, dependencies)) or 'no dependencies'
     print(f'Package {installed.package} depends on:\n  {deps_fmt}\n')
@@ -479,10 +485,10 @@ def run_dependency_checks(
     req: VendoredLibrary
     for req in requirements:
         # Does this library use the installed package?
-        if req in dependents and req not in installed.usage:
+        if req in used_by and req not in installed.usage:
             print(f'Adding `{req.name}` to the "used by" column of `{installed.name}`')
             installed.usage.add(req)
-            dependents.remove(req)
+            used_by.remove(req)
 
         if installed in req.usage and req.name.lower() not in dep_names:
             req.usage.remove(installed)
@@ -491,12 +497,13 @@ def run_dependency_checks(
     # Check that the dependencies are installed (partial),
     #   and that their versions match the new specifier (also partial)
     for dep in filtered_dependencies:
+        dep_name: str = dep.name
         try:
-            dep_req = requirements[dep.name]
+            dep_req = requirements[dep_name]
         except KeyError:
             # raised if dependency was not found
             specifier = str(dep.specifier) or 'any version'
-            text = f'May need to install new dependency `{dep.name}` @ {specifier}'
+            text = f'May need to install new dependency `{dep_name}` @ {specifier}'
             if dep.marker:
                 text += f', but only for {dep.marker!s}'
             print(text)
@@ -515,14 +522,13 @@ def run_dependency_checks(
             dep_req.usage.remove(UsedBy.UPDATE_ME, ignore_errors=True)
 
     # Add remaining dependents
-    d: UsedByModule
-    for d in dependents:
-        if d.name.lower() == PROJECT_MODULE.lower():
-            d.name = PROJECT_MODULE
-        if d not in installed.usage:
-            print(f'Adding `{d.name}` to the "used by" column of `{installed.name}`')
-            installed.usage.add(d)
-            dependents.remove(d)
+    for mod in used_by:
+        if mod.name.lower() == PROJECT_MODULE.lower():
+            mod.name = PROJECT_MODULE
+        if mod not in installed.usage:
+            print(f'Adding `{mod.name}` to the "used by" column of `{installed.name}`')
+            installed.usage.add(mod)
+            used_by.remove(mod)
 
     installed.usage.remove(UsedBy.UPDATE_ME, ignore_errors=True)
 
@@ -573,13 +579,14 @@ def install(
     # Get installed package
     working_set = pkg_resources.WorkingSet([str(temp_install_dir)])  # Must be a list to work
     try:
-        installed_pkg: AnyDistribution = working_set.by_key[parsed_package.name.lower()]
+        installed_pkg: AnyDistribution = \
+            working_set.by_key[parsed_package.name.lower()]  # type: ignore
     except KeyError:
         # Unable to find installed package by the package name provided for installing
         all_installed = list(working_set)
         if len(all_installed) != 1:
             raise InstallFailed(f'Unable to grab installed package info. WorkingSet: {all_installed}')
-        installed_pkg: AnyDistribution = all_installed[0]
+        installed_pkg = all_installed[0]
 
     # Fix bad packaging. I don't care about 3rd-party tests.
     drop_dir(temp_install_dir / 'tests', ignore_errors=True)
@@ -608,7 +615,7 @@ def install(
     )
 
     # Remove the package info folder
-    drop_dir(Path(installed_pkg.egg_info))
+    drop_dir(Path(installed_pkg.egg_info))  # type: ignore
 
     # Move the files to the target vendor folder
     move_subtrees_r(temp_install_dir, vendor_dir)
@@ -715,16 +722,16 @@ def get_modules(temp_install_dir: Path, installed_pkg: AnyDistribution) -> List[
             parsed_top_level.append(top_level_name)
 
         # Loop over namespace packages
-        for top_level, paths in namespace_packages.items():
-            if len(paths) == 1:
+        for ns_paths in namespace_packages.values():
+            if len(ns_paths) == 1:
                 # Single file inside a namespace package (apart from `__init__.py`)
-                parsed_top_level.append(str(paths[0]))
+                parsed_top_level.append(str(ns_paths[0]))
                 continue
 
             # Using dict to preserve order while remaining unique
             sub_modules: List[str] = list(dict.fromkeys(
                 '/'.join(p.parts[:2])
-                for p in paths
+                for p in ns_paths
             ))
             parsed_top_level.extend(sub_modules)
 
@@ -770,10 +777,10 @@ def get_version_and_url(
     installed_pkg: AnyDistribution,
     parsed_package: Requirement,
     source_commit_hash: Optional[str],
-) -> (str, str, bool, Optional[str]):
+) -> Tuple[str, str, bool, str]:
     """Get the installed package's version and url, and whether or not it's a git dependency."""
     is_git = bool(source_commit_hash)
-    branch = None
+    branch = ''
     if is_git:
         url = ''
         match = None
@@ -801,9 +808,9 @@ def get_version_and_url(
                 branch = groups['commit_ish']
 
         url = url.format(slug=slug, commit=source_commit_hash)
-        version = source_commit_hash
+        version = source_commit_hash or ''
     else:
-        version = installed_pkg.version
+        version = str(installed_pkg.version)
         url = f'https://pypi.org/project/{installed_pkg.project_name}/{version}/'
 
     return version, url, is_git, branch

@@ -6,6 +6,7 @@ import shutil
 from pathlib import Path
 from typing import (
     Dict,
+    Iterable,
     List,
     Union,
 )
@@ -120,7 +121,7 @@ def drop_dir(path: Path, ignore_errors=False, onerror=None):
     shutil.rmtree(str(path), ignore_errors=ignore_errors, onerror=onerror)
 
 
-def remove_all(paths: List[Path]):
+def remove_all(paths: Iterable[Path]):
     """Recursively delete every file and directory tree of `paths`."""
     for path in paths:
         if path.is_dir():

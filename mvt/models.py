@@ -7,8 +7,9 @@ from dataclasses import dataclass, field
 from typing import (
     Any,
     Dict,
-    Iterable,
+    Generator,
     List,
+    Optional,
     Type,
     TypeVar,
     Union,
@@ -22,7 +23,7 @@ VendoredLibraryType = TypeVar('VendoredLibraryType', bound='VendoredLibrary')
 VendoredListType = TypeVar('VendoredListType', bound='VendoredList')
 
 KeyType = Union[VendoredLibraryType, UsedByModuleType, str]
-GetItemKeyType = Union[KeyType, int, slice]
+GetItemKeyType = Union[KeyType, int]
 
 UsedByModuleJSONType = Union[str, List[str]]
 
@@ -33,7 +34,7 @@ def to_key(item: KeyType) -> str:
     elif isinstance(item, str):
         key = item
     else:
-        raise ValueError(f'Unsupported type {item.__class__.__name__}')
+        raise ValueError(f'Unsupported type {type(item).__name__}')
 
     return key.lower()
 
@@ -84,7 +85,7 @@ class UsedByModule:
 
     def __repr__(self) -> str:
         data = ', '.join(self.json())
-        return f'{self.__class__.__name__}({data})'
+        return f'{type(self).__name__}({data})'
 
 
 class UsedBy:
@@ -158,7 +159,7 @@ class UsedBy:
         elif isinstance(item, str):
             value = UsedByModule(item)
         else:
-            raise ValueError(f'Unsupported type {item.__class__.__name__}')
+            raise ValueError(f'Unsupported type {type(item).__name__}')
 
         key = value.name.lower()
 
@@ -167,7 +168,7 @@ class UsedBy:
 
         self._modules[key] = value
 
-    def remove(self, item: KeyType, ignore_errors: bool = False) -> UsedByModule:
+    def remove(self, item: KeyType, ignore_errors: bool = False) -> Optional[UsedByModule]:
         """Remove from usage."""
         key = to_key(item)
         try:
@@ -182,19 +183,25 @@ class UsedBy:
         key = to_key(item)
         return key in self._modules
 
-    def __getitem__(self, item: GetItemKeyType) -> Union[UsedByModule, List[UsedByModule]]:
-        if isinstance(item, (int, slice)):
+    def __getitem__(self, item: GetItemKeyType) -> UsedByModule:
+        if isinstance(item, int):
             return self.ordered[item]
 
         key = to_key(item)
         return self._modules[key]
 
-    def __iter__(self) -> Iterable[UsedByModule]:
+    def __iter__(self) -> Generator[UsedByModule, None, None]:
         for item in self.ordered:
             yield item
 
+    def __next__(self):
+        return next(iter(self))
+
     def __len__(self) -> int:
         return len(self._modules)
+
+    def __bool__(self) -> bool:
+        return len(self._modules) == 0
 
     def __str__(self) -> str:
         if self.unused:
@@ -207,7 +214,7 @@ class UsedBy:
             repr(' '.join(item) if isinstance(item, list) else item)
             for item in self.json()
         ))
-        return f'{self.__class__.__name__}({data})'
+        return f'{type(self).__name__}({data})'
 
 
 @dataclass
@@ -263,7 +270,7 @@ class VendoredLibrary:
 
     def as_requirement(self) -> str:
         if not self.updatable:
-            return
+            return ''
 
         if self.git:
             if 'github.com' in self.url:
@@ -278,7 +285,7 @@ class VendoredLibrary:
 
     def as_update_requirement(self) -> str:
         if not self.updatable:
-            return
+            return ''
 
         if self.git:
             if 'github.com' in self.url:
@@ -348,12 +355,12 @@ class VendoredList:
         try:
             return self.ordered[0].folder[0].rstrip('23')
         except IndexError:
-            return None
+            return ''
 
     def add(self, item: VendoredLibrary):
         """Add to list."""
         if not isinstance(item, VendoredLibrary):
-            raise ValueError(f'Unsupported type {item.__class__.__name__}')
+            raise ValueError(f'Unsupported type {type(item).__name__}')
 
         key = item.name.lower()
 
@@ -362,7 +369,7 @@ class VendoredList:
 
         self._items[key] = item
 
-    def remove(self, item: KeyType, ignore_errors: bool = False) -> VendoredLibrary:
+    def remove(self, item: KeyType, ignore_errors: bool = False) -> Optional[VendoredLibrary]:
         """Remove from list."""
         key = to_key(item)
         try:
@@ -377,8 +384,8 @@ class VendoredList:
         key = to_key(item)
         return key in self._items
 
-    def __getitem__(self, item: GetItemKeyType) -> Union[VendoredLibrary, List[VendoredLibrary]]:
-        if isinstance(item, (int, slice)):
+    def __getitem__(self, item: GetItemKeyType) -> VendoredLibrary:
+        if isinstance(item, int):
             return self.ordered[item]
 
         key = to_key(item)
@@ -386,17 +393,20 @@ class VendoredList:
 
     def __setitem__(self, raw_key: KeyType, item: VendoredLibrary):
         if not isinstance(item, VendoredLibrary):
-            raise ValueError(f'Unsupported type {item.__class__.__name__}')
+            raise ValueError(f'Unsupported type {type(item).__name__}')
 
         key = to_key(raw_key)
         self._items[key] = item
 
-    def __iter__(self) -> Iterable[VendoredLibrary]:
+    def __iter__(self) -> Generator[VendoredLibrary, None, None]:
         for item in self.ordered:
             yield item
+
+    def __next__(self):
+        return next(iter(self))
 
     def __len__(self) -> int:
         return len(self._items)
 
     def __repr__(self) -> str:
-        return f'{self.__class__.__name__}({len(self)})'
+        return f'{type(self).__name__}({len(self)})'

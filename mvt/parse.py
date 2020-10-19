@@ -4,9 +4,7 @@
 import re
 from pathlib import Path
 from typing import (
-    Iterable,
     List,
-    Optional,
     Tuple,
     Union,
 )
@@ -71,11 +69,11 @@ def _parse_package(raw_package: str) -> Tuple[str, List[str]]:
     return name, extras
 
 
-def _parse_version(raw_version: str) -> Tuple[Optional[str], Optional[str], bool, Optional[str]]:
+def _parse_version(raw_version: str) -> Tuple[str, str, bool, str]:
     """Parse raw version into version, url, [is_]git and branch name."""
     if raw_version == '-':
         # version, url, git, branch
-        return None, None, False, None
+        return '', '', False, ''
 
     # Split version
     match = VERSION_PATTERN.match(raw_version)
@@ -219,7 +217,7 @@ def _parse_line(line: str, line_no: int) -> LineResultType:
     return result, None
 
 
-def parse_requirements(md_path: Path) -> Iterable[LineResultType]:
+def parse_requirements(md_path: Path):
     """Yields `(VendoredLibrary, None)` or `(None, LineParseError)`."""
     if not md_path.is_file():
         return
