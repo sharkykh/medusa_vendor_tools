@@ -2,6 +2,7 @@
 """Remove vendored library by name."""
 from pathlib import Path
 
+from . import EXT_FOLDER
 from ._utils import (
     load_requirements,
     package_module_paths,
@@ -88,7 +89,7 @@ def remove(listfile: str, package: str) -> None:
     with listpath.open('w', encoding='utf-8', newline='\n') as fh:
         fh.write(md_data)
 
-    if target == 'ext':
+    if target == EXT_FOLDER:
         print('Updating requirements.txt')
         reqs_file = root / 'requirements.txt'
         generate_requirements(

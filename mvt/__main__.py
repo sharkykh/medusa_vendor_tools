@@ -1,8 +1,12 @@
 # coding: utf-8
-from . import __version__
+from . import (
+    __version__,
+    LIB_FOLDER,
+    EXT_FOLDER,
+)
 
-DEFAULT_EXT_README = 'ext/readme.md'
-DEFAULT_LIB_README = 'lib/readme.md'
+DEFAULT_EXT_README = f'{EXT_FOLDER}/readme.md'
+DEFAULT_LIB_README = f'{LIB_FOLDER}/readme.md'
 DEFAULT_REQUIREMENTS_TXT = 'requirements.txt'
 DEFAULT_REQUIREMENTS_JSON = DEFAULT_REQUIREMENTS_TXT[:-4] + '.json'
 
@@ -51,7 +55,7 @@ def main(args=None):
     )
 
     # Command: gen
-    gen_help = 'Generate `requirements.txt` (or JSON) from `ext/readme.md`.'
+    gen_help = f'Generate `requirements.txt` (or JSON) from `{DEFAULT_EXT_README}`.'
     gen_parser = subparsers.add_parser('gen', help=gen_help, description=gen_help)
     gen_parser.add_argument(
         '-i', '--infile', default=DEFAULT_EXT_README, required=False,
@@ -92,21 +96,21 @@ def main(args=None):
     )
 
     # Command: parse
-    parse_help = 'Test parsing `ext/readme.md` or `lib/readme.md`.'
+    parse_help = f'Test parsing `{DEFAULT_EXT_README}` or `{DEFAULT_LIB_README}`.'
     parse_parser = subparsers.add_parser('parse', help=parse_help, description=parse_help)
     parse_parser.add_argument('file', help='The list file to test.')
 
     # Command: check
-    check_help = 'Check vendor folders using `ext/readme.md` or `lib/readme.md`.'
+    check_help = f'Check vendor folders using `{DEFAULT_EXT_README}` or `{DEFAULT_LIB_README}`.'
     check_parser = subparsers.add_parser('check', help=check_help, description=check_help)
     check_parser.add_argument('file', help='The list file to test.')
 
     # Command: sort
-    sort_help = 'Sort `ext/readme.md` and `lib/readme.md` by package name.'
+    sort_help = f'Sort `{DEFAULT_EXT_README}` and `{DEFAULT_LIB_README}` by package name.'
     sort_parser = subparsers.add_parser('sort', help=sort_help, description=sort_help)  # noqa: F841
 
     # Command: make
-    make_help = 'Generate `ext/readme.md` from `requirements.json` or from itself.'
+    make_help = f'Generate `{DEFAULT_EXT_README}` from `{DEFAULT_REQUIREMENTS_JSON}` or from itself.'
     make_parser = subparsers.add_parser('make', help=make_help, description=make_help)
     make_parser.add_argument(
         '-i', '--infile', default=DEFAULT_REQUIREMENTS_JSON, required=False,

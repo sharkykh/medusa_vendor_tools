@@ -22,7 +22,10 @@ import pkg_resources
 from pkg_resources._vendor.packaging.requirements import InvalidRequirement, Requirement
 from pkg_resources._vendor.packaging.markers import Marker
 
-from . import PROJECT_MODULE
+from . import (
+    PROJECT_MODULE,
+    EXT_FOLDER,
+)
 from ._utils import (
     drop_dir,
     get_py_executable,
@@ -184,7 +187,7 @@ def vendor(
     with listpath.open('w', encoding='utf-8', newline='\n') as fh:
         fh.write(md_data)
 
-    if target == 'ext':
+    if target == EXT_FOLDER:
         print('Updating requirements.txt')
         reqs_file = root / 'requirements.txt'
         generate_requirements(
