@@ -47,9 +47,7 @@ mvt <command> [-h | <arguments>]
 #### [`mvt vendor`](/mvt/vendor.py)
 Vendor (or update existing) libraries.
 ```
-usage: mvt vendor [-h] [-2] [-3] [-6] [-u [package [package ...]]] [--pre]
-                  [-f LISTFILE]
-                  package
+usage: mvt vendor [-h] [-2] [-3] [-6] [-u [package [package ...]]] [--pre] [-f LISTFILE] package
 
 positional arguments:
   package               Package to vendor
@@ -60,13 +58,10 @@ optional arguments:
   -3, --py3             Force install Python 3 version to [target]3
   -6, --py6             Force install Python 3 version to [target]
   -u [package [package ...]], --usage [package [package ...]]
-                        Packages that use this library (to add to the used by
-                        column)
-  --pre                 Include pre-release and development versions. By
-                        default, pip only finds stable versions.
+                        Packages that use this library (to add to the used by column)
+  --pre                 Include pre-release and development versions. By default, pip only finds stable versions.
   -f LISTFILE, --listfile LISTFILE
-                        List file to update (affects target folders). Defaults
-                        to `ext/readme.md`
+                        List file to update (affects target folders). Defaults to `ext/readme.md`
 ```
 
 #### [`mvt update`](/mvt/update.py)
@@ -79,13 +74,10 @@ positional arguments:
 
 optional arguments:
   -h, --help            show this help message and exit
-  -c, --cmd             Generate a `vendor` command for the provided package
-                        (does not update)
-  --pre                 Include pre-release and development versions. By
-                        default, pip only finds stable versions.
+  -c, --cmd             Generate a `vendor` command for the provided package (does not update)
+  --pre                 Include pre-release and development versions. By default, pip only finds stable versions.
   -f LISTFILE, --listfile LISTFILE
-                        List file to update (affects target folders). Defaults
-                        to `ext/readme.md`
+                        List file to update (affects target folders). Defaults to `ext/readme.md`
 ```
 
 #### [`mvt gen`](/mvt/gen_req.py)
@@ -98,8 +90,7 @@ optional arguments:
   -i INFILE, --infile INFILE
                         Input file. Defaults to `ext/readme.md`
   -o OUTFILE, --outfile OUTFILE
-                        Output file. Defaults to `requirements.txt` (with
-                        `--json`: `requirements.json`)
+                        Output file. Defaults to `requirements.txt` (with `--json`: `requirements.json`)
   -a, --all-packages    List all packages, not just those used by Medusa
   -j, --json            export as JSON to `requirements.json` (or OUTFILE)
 ```
@@ -110,8 +101,7 @@ List outdated packages.
 usage: mvt outdated [-h] [-f LISTFILE] [package [package ...]]
 
 positional arguments:
-  package               Package(s) to check. If not provided, checks all of
-                        the packages.
+  package               Package(s) to check. If not provided, checks all of the packages.
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -130,8 +120,7 @@ positional arguments:
 optional arguments:
   -h, --help            show this help message and exit
   -f LISTFILE, --listfile LISTFILE
-                        List file to update (affects target folders). Defaults
-                        to `ext/readme.md`
+                        List file to update (affects target folders). Defaults to `ext/readme.md`
 ```
 
 #### [`mvt parse`](/mvt/parse.py)
@@ -175,8 +164,7 @@ usage: mvt make [-h] [-i INFILE] [-o OUTFILE]
 optional arguments:
   -h, --help            show this help message and exit
   -i INFILE, --infile INFILE
-                        JSON or Markdown input file. Defaults to
-                        `requirements.json`
+                        JSON or Markdown input file. Defaults to `requirements.json`
   -o OUTFILE, --outfile OUTFILE
                         Markdown output file. Defaults to `ext/readme.md`
 ```
