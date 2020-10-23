@@ -298,6 +298,54 @@ class VendoredLibrary:
         else:
             return f'{self.package}'
 
+    def as_list_item(self) -> str:
+        # Folder
+        ext = ('ext2' in self.folder) or ('ext3' in self.folder)
+        lib = ('lib2' in self.folder) or ('lib3' in self.folder)
+        folder = ' '.join(self.folder)
+        if ext or lib:
+            folder = f'**{folder}**'
+
+        # Package
+        package = f'`{self.package}`'
+        if self.main_module_matches_package_name:
+            package = f'**{package}**'
+
+        # Version
+        if self.version is None:
+            version = '-'
+        elif not self.git:
+            version = f'[{self.version}]({self.url})'
+        else:
+            branch = f'{self.branch}@' if self.branch else ''
+            version = f'[{branch}{self.version[:7]}]({self.url})'
+            if '/pymedusa/' in self.url:
+                version = f'pymedusa/{version}'
+
+        # Usage
+        usage = str(self.usage)
+
+        # Modules
+        modules = ', '.join(
+            [f'`{self.main_module}`']
+            + [f'`{m}`' for m in self.modules[1:]]
+        )
+
+        # Notes
+        notes = []
+        if len(self.modules) > 1:
+            notes.append(f'Modules: {modules}')
+        elif not self.main_module_matches_package_name:
+            if self.is_main_module_file:
+                notes.append(f'File: `{self.main_module}`')
+            else:
+                notes.append(f'Module: `{self.main_module}`')
+
+        notes.extend(self.notes)
+        notes = '<br>'.join(notes) if notes else '-'
+
+        return ' | '.join((folder, package, version, usage, notes))
+
     @property
     def markers(self) -> str:
         markers = ''

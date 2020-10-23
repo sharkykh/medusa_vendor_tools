@@ -5,59 +5,7 @@ from pathlib import Path
 
 from .__main__ import DEFAULT_EXT_README
 from ._utils import load_requirements
-from .models import (
-    VendoredLibrary,
-    VendoredList,
-)
-
-
-def make_list_item(req: VendoredLibrary):
-    # Folder
-    ext = ('ext2' in req.folder) or ('ext3' in req.folder)
-    lib = ('lib2' in req.folder) or ('lib3' in req.folder)
-    folder = ' '.join(req.folder)
-    if ext or lib:
-        folder = f'**{folder}**'
-
-    # Package
-    package = f'`{req.package}`'
-    if req.main_module_matches_package_name:
-        package = f'**{package}**'
-
-    # Version
-    if req.version is None:
-        version = '-'
-    elif not req.git:
-        version = f'[{req.version}]({req.url})'
-    else:
-        branch = f'{req.branch}@' if req.branch else ''
-        version = f'[{branch}{req.version[:7]}]({req.url})'
-        if '/pymedusa/' in req.url:
-            version = f'pymedusa/{version}'
-
-    # Usage
-    usage = str(req.usage)
-
-    # Modules
-    modules = ', '.join(
-        [f'`{req.main_module}`']
-        + [f'`{m}`' for m in req.modules[1:]]
-    )
-
-    # Notes
-    notes = []
-    if len(req.modules) > 1:
-        notes.append(f'Modules: {modules}')
-    elif not req.main_module_matches_package_name:
-        if req.is_main_module_file:
-            notes.append(f'File: `{req.main_module}`')
-        else:
-            notes.append(f'Module: `{req.main_module}`')
-
-    notes.extend(req.notes)
-    notes = '<br>'.join(notes) if notes else '-'
-
-    return ' | '.join((folder, package, version, usage, notes))
+from .models import VendoredList
 
 
 def make_md(requirements: VendoredList) -> str:
@@ -72,7 +20,7 @@ def make_md(requirements: VendoredList) -> str:
 
     # Items
     data += [
-        make_list_item(req)
+        req.as_list_item()
         for req in requirements
     ]
 
@@ -95,7 +43,7 @@ def main(infile: str, outfile: str):
     if inpath.suffix == '.md':
         requirements = load_requirements(inpath, ignore_errors=True)
 
-        if outpath.samefile(DEFAULT_EXT_README):
+        if outpath == Path(DEFAULT_EXT_README):
             outfile = infile
             outpath = inpath
     else:
