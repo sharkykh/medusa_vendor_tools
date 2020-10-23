@@ -300,10 +300,8 @@ class VendoredLibrary:
 
     def as_list_item(self) -> str:
         # Folder
-        ext = ('ext2' in self.folder) or ('ext3' in self.folder)
-        lib = ('lib2' in self.folder) or ('lib3' in self.folder)
         folder = ' '.join(self.folder)
-        if ext or lib:
+        if self.is_version_specific:
             folder = f'**{folder}**'
 
         # Package
@@ -349,11 +347,8 @@ class VendoredLibrary:
     @property
     def markers(self) -> str:
         markers = ''
-        # Exclusive-OR: Either '<dir>2' or '<dir>3', but not both
-        ext = ('ext2' in self.folder) != ('ext3' in self.folder)
-        lib = ('lib2' in self.folder) != ('lib3' in self.folder)
-        if len(self.folder) == 1 and (ext or lib):
-            major_v = self.folder[0][-1]
+        if self.is_version_exclusive:
+            major_v = self.python_versions[0]
             markers = f" ; python_version == '{major_v}.*'"
 
         return markers
@@ -371,6 +366,28 @@ class VendoredLibrary:
     def is_main_module_file(self) -> bool:
         """Is the main module a file? (*.py)"""
         return self.main_module.endswith('.py')
+
+    @property
+    def python_versions(self) -> List[int]:
+        return [
+            int(folder[-1])
+            for folder in self.folder
+            if folder[-1].isdigit()
+        ]
+
+    @property
+    def is_version_exclusive(self) -> bool:
+        """Is library vendored for a single Python version?"""
+        return all((
+            len(self.folder) == 1,
+            len(set(self.python_versions)) == 1,
+            # (2 in self.python_versions) != (3 in self.python_versions),
+        ))
+
+    @property
+    def is_version_specific(self) -> bool:
+        # check = ('dir2' in folders) or ('dir3' in folders)
+        return bool(self.python_versions)
 
     def __str__(self) -> str:
         return self.name
