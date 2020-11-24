@@ -3,6 +3,7 @@ from . import (
     __version__,
     LIB_FOLDER,
     EXT_FOLDER,
+    SUPPORT_PYTHON_2,
 )
 
 DEFAULT_EXT_README = f'{EXT_FOLDER}/readme.md'
@@ -21,9 +22,10 @@ def main(args=None):
     vendor_help = 'Vendor (or update existing) libraries.'
     vendor_parser = subparsers.add_parser('vendor', help=vendor_help, description=vendor_help)
     vendor_parser.add_argument('package', help='Package to vendor')
-    vendor_parser.add_argument('-2', '--py2', action='store_true', help='Force install Python 2 version to [target]2')
-    vendor_parser.add_argument('-3', '--py3', action='store_true', help='Force install Python 3 version to [target]3')
-    vendor_parser.add_argument('-6', '--py6', action='store_true', help='Force install Python 3 version to [target]')
+    if SUPPORT_PYTHON_2:
+        vendor_parser.add_argument('-2', '--py2', action='store_true', help='Force install Python 2 version to [target]2')
+        vendor_parser.add_argument('-3', '--py3', action='store_true', help='Force install Python 3 version to [target]3')
+        vendor_parser.add_argument('-6', '--py6', action='store_true', help='Force install Python 3 version to [target]')
     vendor_parser.add_argument(
         '-u', '--usage', nargs='*', metavar='package', default=list(),
         help='Packages that use this library (to add to the used by column)'
@@ -124,7 +126,7 @@ def main(args=None):
     args = parser.parse_args(args)
 
     if args.command == 'vendor':
-        if args.py6 and (args.py2 or args.py3):
+        if SUPPORT_PYTHON_2 and args.py6 and (args.py2 or args.py3):
             print('ERROR: --py6 and --py2/--py3 cannot be combined.')
             return
 
@@ -133,9 +135,9 @@ def main(args=None):
             listfile=args.listfile,
             package=args.package,
             dependents=args.usage,
-            py2=args.py2,
-            py3=args.py3,
-            py6=args.py6,
+            py2=args.py2 if SUPPORT_PYTHON_2 else False,
+            py3=args.py3 if SUPPORT_PYTHON_2 else False,
+            py6=args.py6 if SUPPORT_PYTHON_2 else True,
             pre_releases=args.pre,
         )
 

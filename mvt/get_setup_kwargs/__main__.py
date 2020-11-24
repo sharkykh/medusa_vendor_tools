@@ -1,14 +1,23 @@
 import argparse
 import json
-
 from pathlib import Path
+
+from .. import (
+    SUPPORT_PYTHON_2,
+    MIN_PYTHON_2,
+    MIN_PYTHON_3,
+)
 from .main import get_setup_kwargs
 
 
 def main(path):
     results = {
-        '2.7.10': {},
-        '3.5.2': {},
+        version: {}
+        for version in (
+            [MIN_PYTHON_2, MIN_PYTHON_3]
+            if SUPPORT_PYTHON_2 else
+            [MIN_PYTHON_3]
+        )
     }
 
     if not path.startswith('all:'):

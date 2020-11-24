@@ -25,6 +25,8 @@ from pkg_resources._vendor.packaging.markers import Marker
 from . import (
     PROJECT_MODULE,
     EXT_FOLDER,
+    MIN_PYTHON_2,
+    MIN_PYTHON_3,
 )
 from ._utils import (
     drop_dir,
@@ -49,8 +51,6 @@ AnyDistribution = Union[
     pkg_resources.EggInfoDistribution  # type: ignore
 ]
 
-MIN_PYTHON_2 = '2.7.10'
-MIN_PYTHON_3 = '3.5.2'
 # https://github.com/:owner/:repo/archive/:commit-ish.tar.gz#egg=name
 # https://codeload.github.com/:owner/:repo/tar.gz/:commit-ish#egg=name
 # name@https://github.com/:owner/:repo/archive/:commit-ish.tar.gz

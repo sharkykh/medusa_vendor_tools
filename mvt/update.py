@@ -4,6 +4,7 @@ import sys
 from pathlib import Path
 from typing import Union
 
+from . import SUPPORT_PYTHON_2
 from .__main__ import DEFAULT_EXT_README
 from ._utils import get_renovate_config
 from .parse import parse_requirements
@@ -70,6 +71,6 @@ def update(listfile: Union[Path, str], package: str, cmd: bool, pre_releases: bo
         dependents=[],
         py2=False,
         py3=False,
-        py6=False,
+        py6=not SUPPORT_PYTHON_2,
         pre_releases=pre_releases,
     )
